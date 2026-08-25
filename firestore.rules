@@ -197,7 +197,7 @@ service cloud.firestore {
     match /live_shares/{shareId} {
       function isValidLiveShare(data) {
         return data.id is string && data.id.size() <= 128
-          && data.userId == request.auth.uid
+          && data.userId is string && data.userId.size() <= 128
           && data.userName is string && data.userName.size() <= 128
           && data.coordinates is list && data.coordinates.size() == 2
           && data.coordinates[0] is number
@@ -208,17 +208,18 @@ service cloud.firestore {
           && data.updatedAt is string && data.updatedAt.size() <= 64;
       }
 
-      // Read rules: Accessible to users with the specific share ID or code
+      // Read rules: Accessible to any student with the share code/link
       allow get: if true;
-      allow list: if isSignedIn();
+      allow list: if true;
 
-      allow create: if isSignedIn() && isValidId(shareId) && isValidLiveShare(incoming());
-      allow update: if isSignedIn() && isValidId(shareId)
-        && isOwner(existing().userId) && isOwner(incoming().userId)
-        && isValidLiveShare(incoming());
-      allow delete: if isSignedIn() && isValidId(shareId) && (
-        isOwner(existing().userId) || isAdmin()
-      );
+      // Allow creating an ephemeral meetup session with valid fields
+      allow create: if isValidId(shareId) && isValidLiveShare(incoming());
+
+      // Allow updating live coordinates or terminating the session
+      allow update: if isValidId(shareId) && isValidLiveShare(incoming());
+
+      // Allow session deletion
+      allow delete: if isValidId(shareId);
     }
   }
 }

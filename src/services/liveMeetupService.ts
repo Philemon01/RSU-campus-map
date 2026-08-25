@@ -15,6 +15,40 @@ export function generateMeetupCode(): string {
   return `RSU-${randomPart}`;
 }
 
+export function normalizeShareCode(input: string): string {
+  if (!input) return '';
+  let cleaned = input.trim();
+  if (cleaned.includes('meetup=')) {
+    try {
+      const url = new URL(cleaned);
+      cleaned = url.searchParams.get('meetup') || cleaned;
+    } catch {
+      const match = cleaned.match(/meetup=([A-Za-z0-9_\-]+)/);
+      if (match) cleaned = match[1];
+    }
+  }
+  cleaned = cleaned.toUpperCase().replace(/\s+/g, '');
+  if (!cleaned.startsWith('RSU-') && cleaned.length >= 4 && !cleaned.includes('-')) {
+    cleaned = `RSU-${cleaned}`;
+  }
+  return cleaned;
+}
+
+export async function fetchLiveShare(shareId: string): Promise<LiveShareSession | null> {
+  const code = normalizeShareCode(shareId);
+  if (!code) return null;
+  try {
+    const docRef = doc(db, 'live_shares', code);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) return null;
+    const data = snap.data() as LiveShareSession;
+    return data;
+  } catch (err) {
+    console.warn(`Error fetching live share ${code}:`, err);
+    return null;
+  }
+}
+
 export interface StartShareParams {
   userId: string;
   userName: string;

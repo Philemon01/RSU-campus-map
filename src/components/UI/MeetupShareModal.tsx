@@ -27,6 +27,7 @@ import {
   saveFriendCode, 
   removeFriendCode, 
   getSavedFriendCodes,
+  normalizeShareCode,
   MEETUP_STORAGE_KEY
 } from '../../services/liveMeetupService';
 import { User } from 'firebase/auth';
@@ -90,14 +91,19 @@ export const MeetupShareModal: React.FC<MeetupShareModalProps> = ({
 
   // Update remaining time ticker for active broadcast
   useEffect(() => {
-    if (!activeSession || !activeSession.isActive) return;
+    if (!activeSession || !activeSession.isActive) {
+      setTimeLeftStr('');
+      return;
+    }
 
     const updateTimer = () => {
       const now = Date.now();
       const diff = activeSession.expiresAt - now;
       if (diff <= 0) {
         setTimeLeftStr('Expired');
-        setActiveSession(null);
+        if (activeSession.isActive) {
+          setActiveSession(null);
+        }
       } else {
         const mins = Math.floor(diff / 60000);
         const secs = Math.floor((diff % 60000) / 1000);
@@ -108,18 +114,12 @@ export const MeetupShareModal: React.FC<MeetupShareModalProps> = ({
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [activeSession, setActiveSession]);
+  }, [activeSession?.id, activeSession?.expiresAt, activeSession?.isActive]);
 
   if (!isOpen) return null;
 
-  const handleStartSharing = async () => {
-    if (!userLocation) {
-      setNotification({
-        message: "Your current GPS location is required to start live sharing. Please enable location permissions.",
-        type: 'error'
-      });
-      return;
-    }
+  const handleStartSharing = async (customCoords?: [number, number]) => {
+    const coordsToUse = customCoords || userLocation || [4.8005, 6.9830];
 
     setIsStarting(true);
     try {
@@ -129,14 +129,16 @@ export const MeetupShareModal: React.FC<MeetupShareModalProps> = ({
         userName: displayName,
         userPhoto: currentUser?.photoURL || '',
         userEmail: currentUser?.email || '',
-        coordinates: userLocation,
+        coordinates: coordsToUse,
         durationMinutes: selectedDuration,
         statusNote: statusNote.trim() || undefined,
       });
 
       setActiveSession(session);
       setNotification({
-        message: `Live beacon active (${session.id})! Share your code or link with friends.`,
+        message: userLocation 
+          ? `Live GPS beacon active (${session.id})! Share your code with friends.`
+          : `Live beacon active (${session.id}) at RSU Campus Center.`,
         type: 'success'
       });
     } catch (err: any) {
@@ -208,19 +210,9 @@ export const MeetupShareModal: React.FC<MeetupShareModalProps> = ({
     e.preventDefault();
     if (!friendCodeInput.trim()) return;
 
-    // Check if user pasted a URL containing ?meetup=
-    let code = friendCodeInput.trim();
-    if (code.includes('meetup=')) {
-      try {
-        const parsed = new URL(code);
-        code = parsed.searchParams.get('meetup') || code;
-      } catch {
-        const match = code.match(/meetup=([A-Za-z0-9_\-]+)/);
-        if (match) code = match[1];
-      }
-    }
+    const code = normalizeShareCode(friendCodeInput);
+    if (!code) return;
 
-    code = code.toUpperCase();
     setIsAddingFriend(true);
     const success = await onAddFriendCode(code);
     setIsAddingFriend(false);
@@ -449,9 +441,25 @@ export const MeetupShareModal: React.FC<MeetupShareModalProps> = ({
                     </div>
                   </div>
 
+                  {/* GPS Position Status */}
+                  <div className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+                    <div className="flex items-center gap-2">
+                      <MapPin size={14} className={userLocation ? "text-emerald-500" : "text-amber-500 animate-pulse"} />
+                      <span className="font-medium text-slate-700 dark:text-slate-300">
+                        {userLocation ? "Live GPS Coordinates Locked" : "Using RSU Campus Center (Indoor default)"}
+                      </span>
+                    </div>
+                    <span className={cn(
+                      "text-[9px] font-mono font-bold px-2 py-0.5 rounded-full uppercase",
+                      userLocation ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                    )}>
+                      {userLocation ? "GPS Active" : "Default Point"}
+                    </span>
+                  </div>
+
                   {/* Start Button */}
                   <button
-                    onClick={handleStartSharing}
+                    onClick={() => handleStartSharing()}
                     disabled={isStarting}
                     className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl text-xs font-black uppercase tracking-wider shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >

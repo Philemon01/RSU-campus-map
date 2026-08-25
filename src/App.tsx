@@ -47,7 +47,9 @@ import {
   getSavedFriendCodes, 
   saveFriendCode, 
   removeFriendCode, 
-  MEETUP_STORAGE_KEY 
+  MEETUP_STORAGE_KEY,
+  normalizeShareCode,
+  fetchLiveShare
 } from './services/liveMeetupService';
 
 enum OperationType {
@@ -592,7 +594,11 @@ export default function App() {
           distanceMeters,
         });
       });
-      setFriendBeacons(beacons);
+      setFriendBeacons(prev => {
+        // Prevent triggering re-render if count is zero and prev is already empty
+        if (prev.length === 0 && beacons.length === 0) return prev;
+        return beacons;
+      });
     };
 
     savedFriendCodes.forEach((code) => {
@@ -606,7 +612,7 @@ export default function App() {
     return () => {
       unsubs.forEach(u => u());
     };
-  }, [savedFriendCodes, userLocation?.[0], userLocation?.[1]]);
+  }, [savedFriendCodes.join(','), userLocation?.[0], userLocation?.[1]]);
 
   const handleShareRoute = () => {
     if (!selectedLocation) {
@@ -1548,14 +1554,30 @@ export default function App() {
   };
 
   const handleAddFriendCode = async (code: string): Promise<boolean> => {
-    const formatted = code.trim().toUpperCase();
+    const formatted = normalizeShareCode(code);
     if (!formatted) return false;
+    
+    // Check if session exists in Firestore for immediate feedback
+    const session = await fetchLiveShare(formatted);
     const updated = saveFriendCode(formatted);
     setSavedFriendCodes(updated);
-    setNotification({
-      message: `Beacon code ${formatted} connected!`,
-      type: 'success'
-    });
+
+    if (session && session.isActive && Date.now() <= session.expiresAt) {
+      setNotification({
+        message: `Connected to ${session.userName}'s beacon (${formatted})!`,
+        type: 'success'
+      });
+    } else if (session && (!session.isActive || Date.now() > session.expiresAt)) {
+      setNotification({
+        message: `Beacon (${formatted}) is currently inactive or expired.`,
+        type: 'info'
+      });
+    } else {
+      setNotification({
+        message: `Beacon code ${formatted} connected! Listening for live broadcast...`,
+        type: 'success'
+      });
+    }
     return true;
   };
 

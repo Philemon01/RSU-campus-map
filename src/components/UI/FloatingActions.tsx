@@ -88,20 +88,20 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
       }}
       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
-        "fixed z-30 left-1/2 -translate-x-1/2 bottom-4 sm:bottom-6 transition-all duration-300",
+        "fixed z-30 left-1/2 -translate-x-1/2 bottom-2.5 sm:bottom-6 transition-all duration-300 w-auto max-w-[98vw]",
         // Shift slightly on desktop if sidebar panels are open
         (isTimetableOpen || isEventsPanelOpen || isProfileOpen || isMeetupOpen) && "md:left-[calc(50%-200px)]"
       )}
       aria-label="Campus Navigation Bar"
       aria-hidden={isHidden}
     >
-      <div className="flex items-center gap-1 sm:gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-2xl sm:rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-800/80 shadow-[0_16px_40px_-10px_rgba(0,0,0,0.28)] ring-1 ring-black/5 dark:ring-white/10">
+      <div className="flex items-center justify-center gap-0.5 xs:gap-1 sm:gap-2 px-1.5 py-1.5 xs:px-2 sm:px-3.5 sm:py-2 rounded-2xl sm:rounded-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-800/80 shadow-[0_16px_40px_-10px_rgba(0,0,0,0.28)] ring-1 ring-black/5 dark:ring-white/10">
         
         {/* GPS Locate Me Button */}
         <button
           onClick={handleLocateMe}
           className={cn(
-            "relative group flex flex-col items-center justify-center p-2.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 cursor-pointer min-w-[44px] min-h-[44px]",
+            "relative group flex flex-col items-center justify-center px-1.5 py-1 xs:px-2.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 cursor-pointer min-w-[40px] xs:min-w-[44px] min-h-[44px] touch-manipulation",
             isFollowingUser
               ? "bg-rsu-navy text-white shadow-md ring-2 ring-rsu-navy/20 dark:bg-emerald-600 dark:ring-emerald-500/30"
               : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
@@ -115,9 +115,9 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
           )}
-          <LocateFixed size={20} className={cn(isFollowingUser && "animate-pulse")} />
-          <span className="text-[9px] font-bold tracking-tight hidden md:inline-block mt-0.5">
-            {isFollowingUser ? "Live GPS" : "Locate"}
+          <LocateFixed size={18} className={cn("sm:w-5 sm:h-5", isFollowingUser && "animate-pulse")} />
+          <span className="text-[8px] xs:text-[8.5px] sm:text-[9px] md:text-[10px] font-bold tracking-tight leading-none mt-1 whitespace-nowrap">
+            {isFollowingUser ? "GPS On" : "Locate"}
           </span>
         </button>
 
@@ -132,7 +132,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
             });
           }}
           className={cn(
-            "flex flex-col items-center justify-center p-2.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 cursor-pointer min-w-[44px] min-h-[44px]",
+            "flex flex-col items-center justify-center px-1.5 py-1 xs:px-2.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 cursor-pointer min-w-[40px] xs:min-w-[44px] min-h-[44px] touch-manipulation",
             isSatelliteView
               ? "bg-[#4285F4] text-white shadow-md"
               : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
@@ -140,8 +140,8 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
           title={isSatelliteView ? "Switch to 2D Map View" : "Switch to Satellite Imagery"}
           aria-label="Toggle map layer"
         >
-          <Layers size={20} className={cn(isSatelliteView && "animate-pulse")} />
-          <span className="text-[9px] font-bold tracking-tight hidden md:inline-block mt-0.5">
+          <Layers size={18} className={cn("sm:w-5 sm:h-5", isSatelliteView && "animate-pulse")} />
+          <span className="text-[8px] xs:text-[8.5px] sm:text-[9px] md:text-[10px] font-bold tracking-tight leading-none mt-1 whitespace-nowrap">
             {isSatelliteView ? "Satellite" : "Layers"}
           </span>
         </button>
@@ -151,7 +151,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
           <button
             onClick={toggleMeetup}
             className={cn(
-              "relative flex flex-col items-center justify-center p-2.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 cursor-pointer min-w-[44px] min-h-[44px]",
+              "relative flex flex-col items-center justify-center px-1.5 py-1 xs:px-2.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 cursor-pointer min-w-[40px] xs:min-w-[44px] min-h-[44px] touch-manipulation",
               isMeetupOpen
                 ? "bg-teal-600 text-white shadow-md ring-2 ring-teal-500/20"
                 : isLiveSharing
@@ -172,8 +172,8 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
                 {activeFriendsCount}
               </span>
             )}
-            <Radio size={20} className={cn(isLiveSharing && "animate-pulse text-emerald-600 dark:text-emerald-400")} />
-            <span className="text-[9px] font-bold tracking-tight hidden md:inline-block mt-0.5">
+            <Radio size={18} className={cn("sm:w-5 sm:h-5", isLiveSharing && "animate-pulse text-emerald-600 dark:text-emerald-400")} />
+            <span className="text-[8px] xs:text-[8.5px] sm:text-[9px] md:text-[10px] font-bold tracking-tight leading-none mt-1 whitespace-nowrap">
               Meetups
             </span>
           </button>
@@ -186,7 +186,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
         <button
           onClick={toggleTimetable}
           className={cn(
-            "flex flex-col items-center justify-center p-2.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 cursor-pointer min-w-[44px] min-h-[44px]",
+            "flex flex-col items-center justify-center px-1.5 py-1 xs:px-2.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 cursor-pointer min-w-[40px] xs:min-w-[44px] min-h-[44px] touch-manipulation",
             isTimetableOpen
               ? "bg-rsu-orange text-white shadow-md"
               : "text-slate-600 dark:text-slate-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-rsu-orange"
@@ -194,8 +194,8 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
           title="Smart Academic Timetable"
           aria-label="Timetable hub"
         >
-          <BookOpen size={20} />
-          <span className="text-[9px] font-bold tracking-tight hidden md:inline-block mt-0.5">
+          <BookOpen size={18} className="sm:w-5 sm:h-5" />
+          <span className="text-[8px] xs:text-[8.5px] sm:text-[9px] md:text-[10px] font-bold tracking-tight leading-none mt-1 whitespace-nowrap">
             Timetable
           </span>
         </button>
@@ -205,7 +205,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
           <button
             onClick={onToggleChat}
             className={cn(
-              "flex flex-col items-center justify-center p-2.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 cursor-pointer min-w-[44px] min-h-[44px]",
+              "flex flex-col items-center justify-center px-1.5 py-1 xs:px-2.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 cursor-pointer min-w-[40px] xs:min-w-[44px] min-h-[44px] touch-manipulation",
               isChatOpen
                 ? "bg-purple-600 text-white shadow-md"
                 : "text-slate-600 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:text-purple-600 dark:hover:text-purple-400"
@@ -213,8 +213,8 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
             title="RSU Navi-bot"
             aria-label="RSU Navi-bot AI Guide"
           >
-            <Sparkles size={20} className={cn(isChatOpen && "animate-spin")} />
-            <span className="text-[9px] font-bold tracking-tight hidden md:inline-block mt-0.5">
+            <Sparkles size={18} className={cn("sm:w-5 sm:h-5", isChatOpen && "animate-spin")} />
+            <span className="text-[8px] xs:text-[8.5px] sm:text-[9px] md:text-[10px] font-bold tracking-tight leading-none mt-1 whitespace-nowrap">
               Navi-bot
             </span>
           </button>
@@ -224,7 +224,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
         <button
           onClick={toggleProfile}
           className={cn(
-            "flex flex-col items-center justify-center p-2.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 cursor-pointer min-w-[44px] min-h-[44px]",
+            "flex flex-col items-center justify-center px-1.5 py-1 xs:px-2.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 cursor-pointer min-w-[40px] xs:min-w-[44px] min-h-[44px] touch-manipulation",
             isProfileOpen
               ? "bg-emerald-600 text-white shadow-md ring-2 ring-emerald-500/20"
               : "text-slate-600 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400"
@@ -240,7 +240,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
                   alt={currentUser.displayName || 'Profile'}
                   referrerPolicy="no-referrer"
                   className={cn(
-                    "w-5 h-5 rounded-full object-cover border",
+                    "w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-full object-cover border",
                     isProfileOpen ? "border-white" : "border-emerald-500"
                   )}
                 />
@@ -248,16 +248,16 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
               </div>
             ) : (
               <div className={cn(
-                "w-5 h-5 rounded-full font-black text-[9px] flex items-center justify-center border",
+                "w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-full font-black text-[8px] sm:text-[9px] flex items-center justify-center border",
                 isProfileOpen ? "bg-white text-emerald-700 border-white" : "bg-emerald-600 text-white border-emerald-500"
               )}>
                 {getInitials(currentUser.displayName, currentUser.email)}
               </div>
             )
           ) : (
-            <UserIcon size={20} />
+            <UserIcon size={18} className="sm:w-5 sm:h-5" />
           )}
-          <span className="text-[9px] font-bold tracking-tight hidden md:inline-block mt-0.5">
+          <span className="text-[8px] xs:text-[8.5px] sm:text-[9px] md:text-[10px] font-bold tracking-tight leading-none mt-1 whitespace-nowrap">
             Profile
           </span>
         </button>
