@@ -195,31 +195,20 @@ service cloud.firestore {
 
     // 8. Ephemeral Live Location Shares for Campus Meetups
     match /live_shares/{shareId} {
-      function isValidLiveShare(data) {
-        return data.id is string && data.id.size() <= 128
-          && data.userId is string && data.userId.size() <= 128
-          && data.userName is string && data.userName.size() <= 128
-          && data.coordinates is list && data.coordinates.size() == 2
-          && data.coordinates[0] is number
-          && data.coordinates[1] is number
-          && data.expiresAt is number
-          && data.isActive is bool
-          && data.createdAt is string && data.createdAt.size() <= 64
-          && data.updatedAt is string && data.updatedAt.size() <= 64;
-      }
-
       // Read rules: Accessible to any student with the share code/link
-      allow get: if true;
-      allow list: if true;
+      allow get, list: if true;
 
-      // Allow creating an ephemeral meetup session with valid fields
-      allow create: if isValidId(shareId) && isValidLiveShare(incoming());
-
-      // Allow updating live coordinates or terminating the session
-      allow update: if isValidId(shareId) && isValidLiveShare(incoming());
+      // Allow creating, updating coordinates, or stopping the ephemeral meetup session
+      allow create, update: if shareId is string && shareId.size() <= 128
+        && request.resource.data.id is string
+        && request.resource.data.userId is string
+        && request.resource.data.userName is string
+        && request.resource.data.coordinates is list
+        && request.resource.data.expiresAt is number
+        && request.resource.data.isActive is bool;
 
       // Allow session deletion
-      allow delete: if isValidId(shareId);
+      allow delete: if shareId is string && shareId.size() <= 128;
     }
   }
 }
