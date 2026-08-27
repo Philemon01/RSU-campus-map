@@ -195,20 +195,7 @@ service cloud.firestore {
 
     // 8. Ephemeral Live Location Shares for Campus Meetups
     match /live_shares/{shareId} {
-      // Read rules: Accessible to any student with the share code/link
-      allow get, list: if true;
-
-      // Allow creating, updating coordinates, or stopping the ephemeral meetup session
-      allow create, update: if shareId is string && shareId.size() <= 128
-        && request.resource.data.id is string
-        && request.resource.data.userId is string
-        && request.resource.data.userName is string
-        && request.resource.data.coordinates is list
-        && request.resource.data.expiresAt is number
-        && request.resource.data.isActive is bool;
-
-      // Allow session deletion
-      allow delete: if shareId is string && shareId.size() <= 128;
+      allow read, write: if true;
     }
   }
 }

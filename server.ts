@@ -2,22 +2,60 @@ import express from "express";
 import path from "path";
 import cors from "cors";
 import multer from "multer";
+import crypto from "crypto";
 import { parseTimetable } from "./src/services/server/timetableParser";
 import { syncToGoogleCalendar, deleteFromGoogleCalendar } from "./src/services/server/calendarService";
 import { handleCampusChat, parseCampusIntent } from "./src/services/server/chatService";
 import cron from "node-cron";
 import admin from "firebase-admin";
 
+// Helper to validate and clean PEM private keys safely without triggering OpenSSL decode exceptions
+function validateAndCleanPrivateKey(key: string): string | null {
+  try {
+    let pkey = key.trim();
+    if ((pkey.startsWith('"') && pkey.endsWith('"')) || (pkey.startsWith("'") && pkey.endsWith("'"))) {
+      pkey = pkey.slice(1, -1).trim();
+    }
+    pkey = pkey.replace(/\\n/g, '\n').replace(/\\r/g, '');
+
+    const match = pkey.match(/-----BEGIN [A-Z0-9_\s]+-----\s*([\s\S]+?)\s*-----END [A-Z0-9_\s]+-----/);
+    let normalized = pkey;
+    if (match && match[1]) {
+      const base64Only = match[1].replace(/\s+/g, '');
+      if (/^[A-Za-z0-9+/=]+$/.test(base64Only)) {
+        const lines = base64Only.match(/.{1,64}/g)?.join('\n') || base64Only;
+        normalized = `-----BEGIN PRIVATE KEY-----\n${lines}\n-----END PRIVATE KEY-----\n`;
+      }
+    } else {
+      const base64Only = pkey.replace(/\s+/g, '');
+      if (/^[A-Za-z0-9+/=]+$/.test(base64Only) && base64Only.length > 100) {
+        const lines = base64Only.match(/.{1,64}/g)?.join('\n') || base64Only;
+        normalized = `-----BEGIN PRIVATE KEY-----\n${lines}\n-----END PRIVATE KEY-----\n`;
+      }
+    }
+
+    // Verify key format with Node crypto before passing to firebase-admin
+    crypto.createPrivateKey({
+      key: normalized,
+      format: 'pem'
+    });
+
+    return normalized;
+  } catch {
+    return null;
+  }
+}
+
 // Initialize Firebase Admin with resilient parsing and ADC fallback
 function initFirebaseAdmin() {
   if (admin.apps.length > 0) return;
 
   const rawConfig = process.env.FIREBASE_SERVICE_ACCOUNT?.trim();
-  
+  const defaultProjectId = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT || "rsu-campus-map";
+
   if (rawConfig) {
     try {
       let jsonStr = rawConfig;
-      // If it looks base64-encoded, decode it
       if (!jsonStr.startsWith('{') && !jsonStr.startsWith('"')) {
         try {
           const decoded = Buffer.from(jsonStr, 'base64').toString('utf-8');
@@ -31,50 +69,35 @@ function initFirebaseAdmin() {
 
       if (jsonStr.startsWith('{')) {
         const serviceAccount = JSON.parse(jsonStr);
-        if (serviceAccount.private_key) {
-          let pkey = String(serviceAccount.private_key).trim();
-          
-          // Strip wrapping quotes
-          if ((pkey.startsWith('"') && pkey.endsWith('"')) || (pkey.startsWith("'") && pkey.endsWith("'"))) {
-            pkey = pkey.slice(1, -1).trim();
+        const validKey = serviceAccount.private_key ? validateAndCleanPrivateKey(String(serviceAccount.private_key)) : null;
+
+        if (validKey) {
+          serviceAccount.private_key = validKey;
+          try {
+            admin.initializeApp({
+              credential: admin.credential.cert(serviceAccount),
+              projectId: serviceAccount.project_id || defaultProjectId,
+            });
+            console.log("Firebase Admin initialized with service account.");
+            return;
+          } catch (certError: any) {
+            console.log("Firebase Admin service account initialization skipped:", certError.message);
           }
-          
-          // Normalize escaped newlines and carriage returns
-          pkey = pkey.replace(/\\\\n/g, '\n').replace(/\\n/g, '\n').replace(/\\r/g, '\r');
-
-          // If the key is missing PEM headers, wrap it properly
-          if (!pkey.includes('-----BEGIN PRIVATE KEY-----') && !pkey.includes('-----BEGIN RSA PRIVATE KEY-----')) {
-            pkey = `-----BEGIN PRIVATE KEY-----\n${pkey}\n-----END PRIVATE KEY-----\n`;
-          }
-
-          serviceAccount.private_key = pkey;
-        }
-
-        try {
-          admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-            projectId: serviceAccount.project_id || "rsu-campus-map",
-          });
-          console.log("Firebase Admin initialized with service account.");
-          return;
-        } catch (certError: any) {
-          console.warn("Firebase Admin cert init failed, falling back to application defaults:", certError.message);
         }
       }
-    } catch (parseError: any) {
-      console.warn("Could not parse FIREBASE_SERVICE_ACCOUNT JSON, falling back:", parseError.message);
+    } catch {
+      // ignore JSON parse failure
     }
   }
 
   // Graceful fallback to Application Default Credentials or default project config
   try {
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT || "rsu-campus-map";
     admin.initializeApp({
-      projectId,
+      projectId: defaultProjectId,
     });
-    console.log(`Firebase Admin initialized with default configuration (${projectId}).`);
+    console.log(`Firebase Admin initialized with project configuration (${defaultProjectId}).`);
   } catch (fallbackError: any) {
-    console.warn("Firebase Admin default init deferred:", fallbackError.message);
+    console.log("Firebase Admin init note:", fallbackError.message);
   }
 }
 
