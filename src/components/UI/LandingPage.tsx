@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Map, 
@@ -9,6 +9,7 @@ import {
   Sparkles, 
   Clock, 
   ChevronRight, 
+  ChevronDown,
   Moon, 
   Sun, 
   MapPin, 
@@ -133,6 +134,30 @@ export function LandingPage({
   const [searchQuery, setSearchQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isExploreOpen, setIsExploreOpen] = useState(false);
+  const exploreDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close explore dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exploreDropdownRef.current && !exploreDropdownRef.current.contains(event.target as Node)) {
+        setIsExploreOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsExploreOpen(false);
+      }
+    };
+    if (isExploreOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isExploreOpen]);
   
   // Interactive features
   const [activeTab, setActiveTab] = useState<'all' | 'faculty' | 'admin' | 'facility' | 'gate'>('all');
@@ -309,77 +334,195 @@ export function LandingPage({
       "min-h-screen w-full flex flex-col font-sans transition-colors duration-500 overflow-x-hidden selection:bg-slate-900 selection:text-white",
       isDarkMode ? "bg-slate-950 text-slate-100" : "bg-[#F8FAFC] text-slate-900"
     )}>
-      {/* Top Navbar in Urban / Uber Style */}
+      {/* Top Navbar */}
       <nav className={cn(
-        "sticky top-0 z-50 backdrop-blur-xl border-b transition-all duration-300 px-6 lg:px-16 py-4 flex items-center justify-between",
+        "sticky top-0 z-50 backdrop-blur-xl border-b transition-all duration-300 px-4 sm:px-6 lg:px-12 xl:px-16 py-3 flex items-center justify-between gap-4",
         isDarkMode 
           ? "bg-slate-950/90 border-slate-900 shadow-md shadow-slate-950/40" 
           : "bg-white/90 border-slate-200/90 shadow-sm shadow-slate-200/50"
       )}>
         {/* Brand Logo */}
-        <div className="flex items-center gap-3 cursor-pointer group" onClick={() => onNavigateToMap()}>
+        <div 
+          className="flex items-center gap-3 cursor-pointer group shrink-0" 
+          onClick={() => onNavigateToMap()}
+          id="landing-nav-brand"
+        >
           <div className="w-9 h-9 rounded-full bg-slate-950 text-white dark:bg-white dark:text-slate-950 flex items-center justify-center shadow-md transition-transform duration-300 group-hover:scale-105">
-            <GraduationCap size={19} />
+            <GraduationCap size={18} />
           </div>
           <div>
-            <span className="text-lg font-display font-black tracking-tight leading-none uppercase text-slate-950 dark:text-white">
-              Campus<span className="text-blue-600 dark:text-blue-400">Gryd</span>
-            </span>
-            <span className="block text-[9px] font-mono font-bold text-slate-500 uppercase tracking-widest leading-none mt-0.5">
-              RIVERS STATE UNIVERSITY
+            <div className="flex items-center gap-1.5">
+              <span className="text-base sm:text-lg font-display font-black tracking-tight leading-none uppercase text-slate-950 dark:text-white">
+                Campus<span className="text-blue-600 dark:text-blue-400">Gryd</span>
+              </span>
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700">
+                RSU
+              </span>
+            </div>
+            <span className="hidden lg:block text-[8.5px] font-mono font-bold text-slate-500 uppercase tracking-wider leading-none mt-0.5">
+              Rivers State University
             </span>
           </div>
         </div>
 
-        {/* Navigation Links */}
-        <div className="hidden md:flex items-center gap-6 lg:gap-8 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+        {/* Central Segmented Pill Navigation Bar (Desktop & Tablet) */}
+        <div 
+          className="hidden md:flex items-center bg-slate-100/90 dark:bg-slate-900/90 p-1 rounded-full border border-slate-200/80 dark:border-slate-800 shadow-sm backdrop-blur-md"
+          id="landing-nav-pill-menu"
+        >
+          {/* Campus Map */}
           <button 
             onClick={() => onNavigateToMap()} 
-            className="hover:text-slate-950 dark:hover:text-white transition-colors cursor-pointer"
+            className="px-3.5 py-1.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
+            id="nav-map-btn"
           >
-            Campus Map
+            <Map size={13} className="text-blue-500" />
+            <span>Map</span>
           </button>
-          <a 
-            href="#about-section" 
-            className="hover:text-slate-950 dark:hover:text-white transition-colors cursor-pointer text-blue-600 dark:text-blue-400 font-extrabold"
-          >
-            About CampusGryd
-          </a>
+
+          {/* Class Schedule */}
           <button 
             onClick={() => onNavigateToMap(null, true)} 
-            className="hover:text-slate-950 dark:hover:text-white transition-colors cursor-pointer"
+            className="px-3.5 py-1.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
+            id="nav-schedule-btn"
           >
-            Class Schedule
+            <Calendar size={13} className="text-emerald-500" />
+            <span>Schedule</span>
           </button>
+
+          {/* Events */}
           <a 
             href="#events-section" 
-            className="hover:text-slate-950 dark:hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+            className="px-3.5 py-1.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
+            id="nav-events-link"
           >
-            <span>Events & RSVP</span>
+            <Ticket size={13} className="text-rose-500" />
+            <span>Events</span>
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
           </a>
+
+          {/* About Link (on extra large screens) */}
           <a 
-            href="#landmarks-section" 
-            className="hover:text-slate-950 dark:hover:text-white transition-colors cursor-pointer"
+            href="#about-section" 
+            className="hidden xl:flex px-3.5 py-1.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer items-center gap-1.5 shadow-sm hover:shadow"
+            id="nav-about-link"
           >
-            Landmarks
+            <GraduationCap size={13} className="text-blue-500" />
+            <span>About</span>
           </a>
-          <a 
-            href="#walk-estimator-section" 
-            className="hover:text-slate-950 dark:hover:text-white transition-colors cursor-pointer"
-          >
-            Walk Estimator
-          </a>
-          <a 
-            href="#faq-section" 
-            className="hover:text-slate-950 dark:hover:text-white transition-colors cursor-pointer"
-          >
-            FAQ
-          </a>
+
+          {/* Explore Dropdown */}
+          <div className="relative" ref={exploreDropdownRef}>
+            <button
+              onClick={() => setIsExploreOpen(!isExploreOpen)}
+              className={cn(
+                "px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-sm",
+                isExploreOpen 
+                  ? "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow" 
+                  : "text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800"
+              )}
+              id="nav-explore-btn"
+              aria-expanded={isExploreOpen}
+            >
+              <span>Explore</span>
+              <ChevronDown size={13} className={cn("transition-transform duration-200", isExploreOpen && "rotate-180")} />
+            </button>
+
+            {/* Dropdown Menu Overlay */}
+            <AnimatePresence>
+              {isExploreOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                  className={cn(
+                    "absolute right-0 top-full mt-2 w-64 p-2 rounded-2xl border shadow-2xl backdrop-blur-xl z-50 flex flex-col gap-1",
+                    isDarkMode 
+                      ? "bg-slate-900/95 border-slate-800 shadow-slate-950/80" 
+                      : "bg-white/95 border-slate-200 shadow-slate-200/80"
+                  )}
+                  id="nav-explore-dropdown"
+                >
+                  <a
+                    href="#about-section"
+                    onClick={() => setIsExploreOpen(false)}
+                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                      <GraduationCap size={16} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
+                        About CampusGryd
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                        RSU mission, routing & platform
+                      </div>
+                    </div>
+                  </a>
+
+                  <a
+                    href="#landmarks-section"
+                    onClick={() => setIsExploreOpen(false)}
+                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                      <MapPin size={16} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-purple-600 transition-colors">
+                        Key Landmarks
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                        Faculties, halls & senate complex
+                      </div>
+                    </div>
+                  </a>
+
+                  <a
+                    href="#walk-estimator-section"
+                    onClick={() => setIsExploreOpen(false)}
+                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                      <Footprints size={16} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-amber-600 transition-colors">
+                        Walk Estimator
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                        Calculate walking times & calories
+                      </div>
+                    </div>
+                  </a>
+
+                  <a
+                    href="#faq-section"
+                    onClick={() => setIsExploreOpen(false)}
+                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+                      <HelpCircle size={16} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-sky-600 transition-colors">
+                        Help & FAQ
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                        Answers to common student questions
+                      </div>
+                    </div>
+                  </a>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0" id="landing-nav-actions">
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
             className={cn(
@@ -389,6 +532,7 @@ export function LandingPage({
                 : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
             )}
             title="Toggle Light/Dark Theme"
+            id="nav-theme-toggle"
           >
             {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
           </button>
@@ -397,13 +541,14 @@ export function LandingPage({
           <button
             onClick={() => onNavigateToMap()}
             className={cn(
-              "hidden sm:flex px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer shadow-lg border items-center gap-2",
+              "hidden sm:flex px-4 lg:px-5 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer shadow-md border items-center gap-2",
               isDarkMode 
                 ? "bg-white border-white text-slate-950 shadow-white/10 hover:bg-slate-100" 
                 : "bg-slate-950 border-slate-950 text-white shadow-slate-950/20 hover:bg-slate-900"
             )}
+            id="nav-launch-map-btn"
           >
-            <Navigation size={13} className="transform rotate-45" />
+            <Navigation size={13} className="transform rotate-45 text-blue-500" />
             <span>Launch Map</span>
           </button>
 
@@ -417,6 +562,7 @@ export function LandingPage({
                 : "bg-white border-slate-200 text-slate-700 hover:bg-slate-100"
             )}
             aria-label="Toggle mobile menu"
+            id="nav-mobile-toggle"
           >
             {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
