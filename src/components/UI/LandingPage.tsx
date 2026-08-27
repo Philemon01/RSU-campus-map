@@ -134,30 +134,6 @@ export function LandingPage({
   const [searchQuery, setSearchQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isExploreOpen, setIsExploreOpen] = useState(false);
-  const exploreDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close explore dropdown when clicking outside or pressing Escape
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (exploreDropdownRef.current && !exploreDropdownRef.current.contains(event.target as Node)) {
-        setIsExploreOpen(false);
-      }
-    };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsExploreOpen(false);
-      }
-    };
-    if (isExploreOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleKeyDown);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isExploreOpen]);
   
   // Interactive features
   const [activeTab, setActiveTab] = useState<'all' | 'faculty' | 'admin' | 'facility' | 'gate'>('all');
@@ -370,20 +346,20 @@ export function LandingPage({
           className="hidden md:flex items-center bg-slate-100/90 dark:bg-slate-900/90 p-1 rounded-full border border-slate-200/80 dark:border-slate-800 shadow-sm backdrop-blur-md"
           id="landing-nav-pill-menu"
         >
-          {/* Campus Map */}
+          {/* Map */}
           <button 
             onClick={() => onNavigateToMap()} 
-            className="px-3.5 py-1.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
+            className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
             id="nav-map-btn"
           >
             <Map size={13} className="text-blue-500" />
             <span>Map</span>
           </button>
 
-          {/* Class Schedule */}
+          {/* Schedule */}
           <button 
             onClick={() => onNavigateToMap(null, true)} 
-            className="px-3.5 py-1.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
+            className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
             id="nav-schedule-btn"
           >
             <Calendar size={13} className="text-emerald-500" />
@@ -393,7 +369,7 @@ export function LandingPage({
           {/* Events */}
           <a 
             href="#events-section" 
-            className="px-3.5 py-1.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
+            className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
             id="nav-events-link"
           >
             <Ticket size={13} className="text-rose-500" />
@@ -401,124 +377,25 @@ export function LandingPage({
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
           </a>
 
-          {/* About Link (on extra large screens) */}
+          {/* About */}
           <a 
             href="#about-section" 
-            className="hidden xl:flex px-3.5 py-1.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer items-center gap-1.5 shadow-sm hover:shadow"
+            className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
             id="nav-about-link"
           >
             <GraduationCap size={13} className="text-blue-500" />
             <span>About</span>
           </a>
 
-          {/* Explore Dropdown */}
-          <div className="relative" ref={exploreDropdownRef}>
-            <button
-              onClick={() => setIsExploreOpen(!isExploreOpen)}
-              className={cn(
-                "px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-sm",
-                isExploreOpen 
-                  ? "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow" 
-                  : "text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800"
-              )}
-              id="nav-explore-btn"
-              aria-expanded={isExploreOpen}
-            >
-              <span>Explore</span>
-              <ChevronDown size={13} className={cn("transition-transform duration-200", isExploreOpen && "rotate-180")} />
-            </button>
-
-            {/* Dropdown Menu Overlay */}
-            <AnimatePresence>
-              {isExploreOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                  transition={{ duration: 0.15 }}
-                  className={cn(
-                    "absolute right-0 top-full mt-2 w-64 p-2 rounded-2xl border shadow-2xl backdrop-blur-xl z-50 flex flex-col gap-1",
-                    isDarkMode 
-                      ? "bg-slate-900/95 border-slate-800 shadow-slate-950/80" 
-                      : "bg-white/95 border-slate-200 shadow-slate-200/80"
-                  )}
-                  id="nav-explore-dropdown"
-                >
-                  <a
-                    href="#about-section"
-                    onClick={() => setIsExploreOpen(false)}
-                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group cursor-pointer"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                      <GraduationCap size={16} />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
-                        About CampusGryd
-                      </div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
-                        RSU mission, routing & platform
-                      </div>
-                    </div>
-                  </a>
-
-                  <a
-                    href="#landmarks-section"
-                    onClick={() => setIsExploreOpen(false)}
-                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group cursor-pointer"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-                      <MapPin size={16} />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-purple-600 transition-colors">
-                        Key Landmarks
-                      </div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
-                        Faculties, halls & senate complex
-                      </div>
-                    </div>
-                  </a>
-
-                  <a
-                    href="#walk-estimator-section"
-                    onClick={() => setIsExploreOpen(false)}
-                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group cursor-pointer"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                      <Footprints size={16} />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-amber-600 transition-colors">
-                        Walk Estimator
-                      </div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
-                        Calculate walking times & calories
-                      </div>
-                    </div>
-                  </a>
-
-                  <a
-                    href="#faq-section"
-                    onClick={() => setIsExploreOpen(false)}
-                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group cursor-pointer"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
-                      <HelpCircle size={16} />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-sky-600 transition-colors">
-                        Help & FAQ
-                      </div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
-                        Answers to common student questions
-                      </div>
-                    </div>
-                  </a>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          {/* FAQ */}
+          <a 
+            href="#faq-section" 
+            className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
+            id="nav-faq-link"
+          >
+            <HelpCircle size={13} className="text-sky-500" />
+            <span>FAQ</span>
+          </a>
         </div>
 
         {/* Action Controls */}
@@ -541,7 +418,7 @@ export function LandingPage({
           <button
             onClick={() => onNavigateToMap()}
             className={cn(
-              "hidden sm:flex px-4 lg:px-5 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer shadow-md border items-center gap-2",
+              "hidden sm:flex px-4 lg:px-5 py-2 rounded-full text-xs font-bold tracking-wide transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer shadow-md border items-center gap-2",
               isDarkMode 
                 ? "bg-white border-white text-slate-950 shadow-white/10 hover:bg-slate-100" 
                 : "bg-slate-950 border-slate-950 text-white shadow-slate-950/20 hover:bg-slate-900"
@@ -578,28 +455,20 @@ export function LandingPage({
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25 }}
             className={cn(
-              "md:hidden sticky top-[73px] z-40 border-b overflow-hidden px-6 py-4 flex flex-col gap-3 shadow-xl backdrop-blur-xl",
+              "md:hidden sticky top-[73px] z-40 border-b overflow-hidden px-6 py-4 flex flex-col gap-2.5 shadow-xl backdrop-blur-xl",
               isDarkMode ? "bg-slate-950/95 border-slate-800" : "bg-white/95 border-slate-200"
             )}
           >
             <button 
               onClick={() => { setIsMobileMenuOpen(false); onNavigateToMap(); }} 
-              className="flex items-center gap-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 hover:text-blue-600 cursor-pointer border-b border-slate-100 dark:border-slate-800/80"
+              className="flex items-center gap-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 cursor-pointer border-b border-slate-100 dark:border-slate-800/80"
             >
               <Map size={15} className="text-blue-500" />
               <span>Campus Map</span>
             </button>
-            <a 
-              href="#about-section" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-3 py-2 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 hover:text-blue-700 cursor-pointer border-b border-slate-100 dark:border-slate-800/80"
-            >
-              <GraduationCap size={15} className="text-blue-500" />
-              <span>About CampusGryd</span>
-            </a>
             <button 
               onClick={() => { setIsMobileMenuOpen(false); onNavigateToMap(null, true); }} 
-              className="flex items-center gap-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 hover:text-blue-600 cursor-pointer border-b border-slate-100 dark:border-slate-800/80"
+              className="flex items-center gap-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 cursor-pointer border-b border-slate-100 dark:border-slate-800/80"
             >
               <Calendar size={15} className="text-emerald-500" />
               <span>Class Schedule</span>
@@ -607,31 +476,23 @@ export function LandingPage({
             <a 
               href="#events-section" 
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 hover:text-rose-600 cursor-pointer border-b border-slate-100 dark:border-slate-800/80"
+              className="flex items-center gap-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-rose-600 cursor-pointer border-b border-slate-100 dark:border-slate-800/80"
             >
               <Ticket size={15} className="text-rose-500" />
-              <span>Campus Events & RSVP</span>
+              <span>Campus Events</span>
             </a>
             <a 
-              href="#landmarks-section" 
+              href="#about-section" 
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 hover:text-blue-600 cursor-pointer border-b border-slate-100 dark:border-slate-800/80"
+              className="flex items-center gap-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 cursor-pointer border-b border-slate-100 dark:border-slate-800/80"
             >
-              <MapPin size={15} className="text-purple-500" />
-              <span>Landmarks</span>
-            </a>
-            <a 
-              href="#walk-estimator-section" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 hover:text-blue-600 cursor-pointer border-b border-slate-100 dark:border-slate-800/80"
-            >
-              <Footprints size={15} className="text-amber-500" />
-              <span>Walk Estimator</span>
+              <GraduationCap size={15} className="text-blue-500" />
+              <span>About CampusGryd</span>
             </a>
             <a 
               href="#faq-section" 
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 hover:text-blue-600 cursor-pointer border-b border-slate-100 dark:border-slate-800/80"
+              className="flex items-center gap-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 cursor-pointer border-b border-slate-100 dark:border-slate-800/80"
             >
               <HelpCircle size={15} className="text-sky-500" />
               <span>Help & FAQ</span>
@@ -647,7 +508,7 @@ export function LandingPage({
                   setIsMobileMenuOpen(false);
                 }
               }}
-              className="flex items-center gap-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 hover:text-emerald-600 cursor-pointer border-b border-slate-100 dark:border-slate-800/80"
+              className="flex items-center gap-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-emerald-600 cursor-pointer border-b border-slate-100 dark:border-slate-800/80"
             >
               <Shield size={15} className="text-emerald-500" />
               <span>Privacy Policy</span>
@@ -663,7 +524,7 @@ export function LandingPage({
                   setIsMobileMenuOpen(false);
                 }
               }}
-              className="flex items-center gap-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 hover:text-blue-600 cursor-pointer border-b border-slate-100 dark:border-slate-800/80"
+              className="flex items-center gap-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 cursor-pointer border-b border-slate-100 dark:border-slate-800/80"
             >
               <FileText size={15} className="text-blue-500" />
               <span>Terms of Service</span>
@@ -671,7 +532,7 @@ export function LandingPage({
 
             <button
               onClick={() => { setIsMobileMenuOpen(false); onNavigateToMap(); }}
-              className="mt-2 w-full py-3 rounded-full text-xs font-black uppercase tracking-wider bg-blue-600 text-white shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all"
+              className="mt-2 w-full py-3 rounded-full text-xs font-bold bg-blue-600 text-white shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all"
             >
               <Navigation size={14} className="transform rotate-45" />
               <span>Launch Interactive Map</span>
