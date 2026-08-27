@@ -1,7 +1,15 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { initializeFirestore } from 'firebase/firestore';
+import { 
+  initializeFirestore, 
+  persistentLocalCache, 
+  persistentMultipleTabManager,
+  setLogLevel
+} from 'firebase/firestore';
 import firebaseConfigLocal from '../../firebase-applet-config.json';
+
+// Silence non-critical offline connection notifications from Firestore SDK
+setLogLevel('error');
 
 // Allow overriding via environment variables (vital for custom production/Vercel hosting)
 const firebaseConfig = {
@@ -16,7 +24,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const db = initializeFirestore(app, {
-  experimentalAutoDetectLongPolling: true,
+  experimentalForceLongPolling: true,
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
 });
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
