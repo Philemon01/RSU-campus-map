@@ -18,7 +18,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { collection, query, where, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy } from 'firebase/firestore';
-import { signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
+import { signInWithPopup, signInAnonymously, GoogleAuthProvider, User } from 'firebase/auth';
 import { db, auth, googleProvider, getCachedAccessToken, setCachedAccessToken } from '../../lib/firebase';
 import { locations } from '../../data/locations';
 import { cn } from '../../lib/utils';
@@ -625,22 +625,7 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
               </p>
             </div>
             
-            {typeof window !== 'undefined' && window.self !== window.top ? (
-              <div className="p-4 bg-rsu-orange/10 border border-rsu-orange/20 rounded-2xl w-full max-w-xs mx-auto text-center space-y-3">
-                <p className="text-xs font-black text-rsu-orange uppercase tracking-wider flex items-center justify-center gap-1">🔒 Frame Authentication</p>
-                <p className="text-[11px] text-slate-600 font-bold leading-normal">
-                  Google Google Sign-In is restricted inside interactive inline frames due to security policies. Please open the app in a new tab to authenticate!
-                </p>
-                <a 
-                  href={window.location.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center w-full py-3 bg-rsu-orange hover:bg-rsu-orange/90 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer text-center"
-                >
-                  Open in New Tab ↗
-                </a>
-              </div>
-            ) : (
+            <div className="w-full max-w-xs mx-auto space-y-3">
               <button 
                 onClick={async () => {
                   setIsSigningIn(true);
@@ -650,27 +635,62 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
                     if (credential?.accessToken) {
                       setCachedAccessToken(credential.accessToken);
                     }
+                    showToast("success", `Signed in as ${result.user.displayName || 'Student'}!`);
                   } catch (error: any) {
-                    showToast("error", "Sign-in error: " + error.message);
+                    if (error.code === 'auth/unauthorized-domain' || error.code === 'auth/popup-blocked') {
+                      showToast("info", "Please open the app in a new tab or continue with Guest Pass below.");
+                    } else if (error.code !== 'auth/popup-closed-by-user') {
+                      showToast("error", "Sign-in notice: " + error.message);
+                    }
                   } finally {
                     setIsSigningIn(false);
                   }
                 }}
                 disabled={isSigningIn}
-                className="w-full max-w-xs bg-rsu-navy text-white py-4 rounded-xl font-black uppercase tracking-wider flex items-center justify-center gap-3 active:scale-95 transition-all shadow-md hover:bg-rsu-navy/90"
+                className="w-full bg-rsu-navy text-white py-3.5 px-4 rounded-xl font-black uppercase text-xs tracking-wider flex items-center justify-center gap-2.5 active:scale-95 transition-all shadow-md hover:bg-rsu-navy/90 cursor-pointer"
               >
                 {isSigningIn ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
-                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24">
                       <path d="M12.24 10.285V13.4h6.887C18.2 15.614 15.645 18 12.24 18c-3.86 0-7-3.14-7-7s3.14-7 7-7c1.7 0 3.3.61 4.5 1.74l2.42-2.42C17.345 1.517 14.93 1 12.24 1c-6.075 0-11 4.925-11 11s4.925 11 11 11c5.96 0 10.74-4.8 10.74-11 0-.756-.095-1.3-.23-1.715h-10.51z" />
                     </svg>
                     <span>Sign In with Google</span>
                   </>
                 )}
               </button>
-            )}
+
+              <button
+                onClick={async () => {
+                  setIsSigningIn(true);
+                  try {
+                    await signInAnonymously(auth);
+                    showToast("success", "✓ Signed in with Campus Guest Pass!");
+                  } catch (err: any) {
+                    showToast("error", "Guest pass initialization notice: " + err.message);
+                  } finally {
+                    setIsSigningIn(false);
+                  }
+                }}
+                disabled={isSigningIn}
+                className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-rsu-navy dark:text-white py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 transition-all border border-slate-200 dark:border-slate-700 cursor-pointer"
+              >
+                <span>Continue as Guest Student</span>
+              </button>
+
+              {typeof window !== 'undefined' && window.self !== window.top && (
+                <a 
+                  href={window.location.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center w-full py-2.5 px-4 bg-rsu-orange/10 hover:bg-rsu-orange/20 text-rsu-orange rounded-xl font-bold text-[11px] uppercase tracking-wider transition-all border border-rsu-orange/30 active:scale-95 cursor-pointer text-center gap-1.5"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Open in Dedicated Tab</span>
+                </a>
+              )}
+            </div>
             <p className="text-[10px] text-rsu-muted opacity-80 uppercase tracking-widest leading-normal">
               SECURED BY FIREBASE AUTH
             </p>

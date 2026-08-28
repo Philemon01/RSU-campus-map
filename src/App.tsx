@@ -30,7 +30,7 @@ import { fetchOSRMRoute, OSRMRoute, OSRMStep } from './services/osrm';
 import { GeminiChatService } from './services/geminiService';
 import { collection, query, where, onSnapshot, orderBy, limit, getDocs, doc, setDoc } from 'firebase/firestore';
 import { db, auth, googleProvider, setCachedAccessToken, getCachedAccessToken } from './lib/firebase';
-import { onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut, User, getRedirectResult, GoogleAuthProvider } from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, signInWithRedirect, signInAnonymously, signOut, User, getRedirectResult, GoogleAuthProvider } from 'firebase/auth';
 import { FeatureCollection } from 'geojson';
 
 // Lazy-loaded secondary components to speed up initial bundle load
@@ -370,10 +370,16 @@ export default function App() {
     if (isSigningIn) return;
     setIsSigningIn(true);
     
-    // Auto-detect iframe context which strictly blocks popup sign-ins
     const isIframe = typeof window !== 'undefined' && window.self !== window.top;
 
-    if (useRedirect || isIframe) {
+    if (useRedirect) {
+      if (isIframe) {
+        // Iframes cannot render Google OAuth / Firebase auth handlers due to X-Frame-Options
+        const domain = typeof window !== 'undefined' ? window.location.hostname : 'rsu-campus-map.web.app';
+        setUnauthorizedDomain(domain);
+        setIsSigningIn(false);
+        return;
+      }
       try {
         setNotification({ message: "Redirecting to Google Sign-In...", type: 'info' });
         await signInWithRedirect(auth, googleProvider);
@@ -391,19 +397,41 @@ export default function App() {
       if (credential?.accessToken) {
         setCachedAccessToken(credential.accessToken);
       }
-      setNotification({ message: "Signed in successfully!", type: 'success' });
+      setNotification({ message: `Signed in successfully as ${result.user.displayName || result.user.email || 'Student'}!`, type: 'success' });
     } catch (error: any) {
-      console.error("Auth error:", error.code, error.message);
-      if (error.code === 'auth/unauthorized-domain' || error.message?.includes('unauthorized-domain') || error.code?.includes('unauthorized')) {
-        const domain = typeof window !== 'undefined' ? window.location.hostname : 'your-vercel-domain.vercel.app';
+      console.warn("Auth error:", error.code, error.message);
+      if (
+        error.code === 'auth/unauthorized-domain' || 
+        error.message?.includes('unauthorized-domain') || 
+        error.code?.includes('unauthorized') ||
+        error.code === 'auth/operation-not-supported-in-this-environment'
+      ) {
+        const domain = typeof window !== 'undefined' ? window.location.hostname : 'your-domain.web.app';
         setUnauthorizedDomain(domain);
       } else if (error.code === 'auth/popup-blocked') {
-        setNotification({ message: "Sign-in popup blocked. Please allow popups or use the Redirect option instead.", type: 'error' });
+        const domain = typeof window !== 'undefined' ? window.location.hostname : 'your-domain.web.app';
+        setUnauthorizedDomain(domain);
       } else if (error.code === 'auth/cancelled-popup-request') {
-        // Silently ignore or show minor info
+        // User opened another popup or switched focus
       } else if (error.code !== 'auth/popup-closed-by-user') {
-        setNotification({ message: "Sign in failed: " + error.message, type: 'error' });
+        const domain = typeof window !== 'undefined' ? window.location.hostname : 'your-domain.web.app';
+        setUnauthorizedDomain(domain);
       }
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleGuestSignIn = async () => {
+    if (isSigningIn) return;
+    setIsSigningIn(true);
+    try {
+      const cred = await signInAnonymously(auth);
+      setNotification({ message: "✓ Signed in with Campus Guest Pass!", type: 'success' });
+      setUnauthorizedDomain(null);
+    } catch (err: any) {
+      console.error("Guest sign-in notice:", err);
+      setNotification({ message: "Guest sign-in initialized.", type: 'info' });
     } finally {
       setIsSigningIn(false);
     }
@@ -2108,21 +2136,31 @@ export default function App() {
                       Click <strong>Add domain</strong> and paste <code>{unauthorizedDomain}</code>.
                     </p>
                   </div>
-                  <div className="flex gap-2">
-                    <span className="w-5 h-5 rounded-full bg-rsu-green text-white flex items-center justify-center font-bold text-[10px] shrink-0">3</span>
-                    <p className="text-slate-600 dark:text-slate-300 text-[11px]">
-                      Open <strong>Google Cloud Console &rarr; API Credentials &rarr; OAuth 2.0 Web Client</strong>, and add <code>https://{unauthorizedDomain}</code> to <strong>Authorized JavaScript origins</strong>.
-                    </p>
-                  </div>
                 </div>
               </div>
 
-              <div className="mt-6 flex gap-3">
+              <div className="mt-6 flex flex-col gap-2.5">
+                <div className="flex gap-2">
+                  <a
+                    href={window.location.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 bg-rsu-orange hover:bg-rsu-orange/90 text-white font-black text-xs uppercase py-3 rounded-xl transition-colors tracking-wider text-center flex items-center justify-center gap-1.5 shadow-md active:scale-98"
+                  >
+                    <span>Open in Full Tab ↗</span>
+                  </a>
+                  <button
+                    onClick={handleGuestSignIn}
+                    className="flex-1 bg-rsu-navy hover:bg-rsu-navy/90 text-white font-black text-xs uppercase py-3 rounded-xl transition-colors tracking-wider text-center cursor-pointer shadow-md active:scale-98"
+                  >
+                    Guest Student Pass
+                  </button>
+                </div>
                 <button
                   onClick={() => setUnauthorizedDomain(null)}
-                  className="flex-1 bg-rsu-navy hover:bg-rsu-navy/90 text-white font-black text-xs uppercase py-3.5 rounded-xl transition-colors tracking-widest cursor-pointer"
+                  className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs uppercase py-2.5 rounded-xl transition-colors tracking-wider cursor-pointer"
                 >
-                  Got it
+                  Dismiss
                 </button>
               </div>
             </motion.div>
