@@ -9,7 +9,7 @@ import {
 import firebaseConfigLocal from '../../firebase-applet-config.json';
 
 // Silence non-critical offline connection notifications from Firestore SDK
-setLogLevel('error');
+setLogLevel('silent');
 
 // Allow overriding via environment variables (vital for custom production/Vercel hosting)
 const firebaseConfig = {
@@ -24,7 +24,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
+  experimentalAutoDetectLongPolling: true,
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager()
   })
