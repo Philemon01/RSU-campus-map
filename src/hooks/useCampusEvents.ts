@@ -137,6 +137,9 @@ export function useCampusEvents(currentUser: User | null) {
           });
           setDeletedEventIds(prev => {
             const combined = Array.from(new Set([...prev, ...deleted]));
+            if (combined.length === prev.length && combined.every((id, idx) => id === prev[idx])) {
+              return prev;
+            }
             try {
               localStorage.setItem('rsu_deleted_event_ids', JSON.stringify(combined));
             } catch {}
@@ -161,7 +164,7 @@ export function useCampusEvents(currentUser: User | null) {
   // Subscribe to user RSVP collection
   useEffect(() => {
     if (!currentUser?.uid) {
-      setRsvpedEventIds([]);
+      setRsvpedEventIds(prev => prev.length === 0 ? prev : []);
       return;
     }
 
@@ -183,7 +186,12 @@ export function useCampusEvents(currentUser: User | null) {
           snapshot.forEach((docSnap) => {
             rsvps.push(docSnap.id);
           });
-          setRsvpedEventIds(rsvps);
+          setRsvpedEventIds(prev => {
+            if (rsvps.length === prev.length && rsvps.every((id, idx) => id === prev[idx])) {
+              return prev;
+            }
+            return rsvps;
+          });
           try {
             localStorage.setItem(`rsu_user_rsvps_${currentUser.uid}`, JSON.stringify(rsvps));
           } catch {}

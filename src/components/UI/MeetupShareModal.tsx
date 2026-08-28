@@ -92,7 +92,7 @@ export const MeetupShareModal: React.FC<MeetupShareModalProps> = ({
   // Update remaining time ticker for active broadcast
   useEffect(() => {
     if (!activeSession || !activeSession.isActive) {
-      setTimeLeftStr('');
+      setTimeLeftStr(prev => prev === '' ? prev : '');
       return;
     }
 
@@ -100,14 +100,15 @@ export const MeetupShareModal: React.FC<MeetupShareModalProps> = ({
       const now = Date.now();
       const diff = activeSession.expiresAt - now;
       if (diff <= 0) {
-        setTimeLeftStr('Expired');
+        setTimeLeftStr(prev => prev === 'Expired' ? prev : 'Expired');
         if (activeSession.isActive) {
           setActiveSession(null);
         }
       } else {
         const mins = Math.floor(diff / 60000);
         const secs = Math.floor((diff % 60000) / 1000);
-        setTimeLeftStr(`${mins}m ${secs < 10 ? '0' : ''}${secs}s`);
+        const newStr = `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+        setTimeLeftStr(prev => prev === newStr ? prev : newStr);
       }
     };
 

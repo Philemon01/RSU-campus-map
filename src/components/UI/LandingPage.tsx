@@ -181,6 +181,7 @@ export function LandingPage({
       intervalId = setInterval(() => {
         setSimProgress((prev) => {
           if (prev >= 100) {
+            setSimStepIdx((curIdx) => (curIdx + 1) % SIM_ROUTE.length);
             return 0;
           }
           return prev + 4;
@@ -189,12 +190,6 @@ export function LandingPage({
     }
     return () => clearInterval(intervalId);
   }, [panelMode]);
-
-  useEffect(() => {
-    if (simProgress === 0) {
-      setSimStepIdx((curIdx) => (curIdx + 1) % SIM_ROUTE.length);
-    }
-  }, [simProgress]);
 
   // Handle live search
   const filteredSearch = searchQuery.trim()

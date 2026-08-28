@@ -82,10 +82,13 @@ function MapController({ center, zoom, onMapMove }: { center: [number, number], 
       if (lastTargetRef.current) {
         const dTarget = L.latLng([newCenter.lat, newCenter.lng]).distanceTo(lastTargetRef.current.center);
         const zTarget = Math.abs(newZoom - lastTargetRef.current.zoom);
-        if (dTarget < 1 && zTarget < 0.1) {
+        if (dTarget < 2 && zTarget < 0.1) {
           return;
         }
       }
+      
+      // Update lastTargetRef immediately so echoing prop updates don't call map.setView
+      lastTargetRef.current = { center: [newCenter.lat, newCenter.lng], zoom: newZoom };
       onMapMoveRef.current([newCenter.lat, newCenter.lng], newZoom);
     };
 
@@ -103,8 +106,8 @@ function MapController({ center, zoom, onMapMove }: { center: [number, number], 
     // Check if we already tried to set this target to avoid re-triggering during animation
     if (lastTargetRef.current) {
       const isSameTarget = 
-        L.latLng(center).distanceTo(lastTargetRef.current.center) < 0.1 && 
-        Math.abs(zoom - lastTargetRef.current.zoom) < 0.01;
+        L.latLng(center).distanceTo(lastTargetRef.current.center) < 1 && 
+        Math.abs(zoom - lastTargetRef.current.zoom) < 0.1;
       if (isSameTarget) {
         return;
       }
@@ -112,7 +115,7 @@ function MapController({ center, zoom, onMapMove }: { center: [number, number], 
 
     const dist = L.latLng(center).distanceTo(currentCenter);
     // If the map is already there (e.g. user dragged it there or it's within threshold), just sync lastTargetRef and skip setView
-    if (dist <= 0.1 && Math.abs(zoom - currentZoom) <= 0.01) {
+    if (dist <= 1 && Math.abs(zoom - currentZoom) <= 0.1) {
       lastTargetRef.current = { center, zoom };
       return;
     }
@@ -120,7 +123,7 @@ function MapController({ center, zoom, onMapMove }: { center: [number, number], 
     // Otherwise, perform the programmatic movement
     isUserInteractingRef.current = false;
     lastTargetRef.current = { center, zoom };
-    map.setView(center, zoom, { animate: true, duration: 1 });
+    map.setView(center, zoom, { animate: true, duration: 0.8 });
   }, [center[0], center[1], zoom, map]);
   
   return null;

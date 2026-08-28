@@ -442,9 +442,9 @@ export const LegalPage: React.FC<LegalPageProps> = ({ initialTab = 'terms', onBa
   // Adjust highlight matching index boundary bounds
   useEffect(() => {
     if (matches.length > 0) {
-      setMatchIndex(0);
+      setMatchIndex(prev => (prev >= 0 && prev < matches.length ? prev : 0));
     } else {
-      setMatchIndex(-1);
+      setMatchIndex(prev => (prev === -1 ? prev : -1));
     }
   }, [matches.length, activeTab]);
 
