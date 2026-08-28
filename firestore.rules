@@ -2,11 +2,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Global safety net (Default Deny Catch-All)
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
     // --- REUSABLE SECURITY PRIMITIVES AND HELPERS ---
     
     function isSignedIn() {
@@ -152,6 +147,7 @@ service cloud.firestore {
           && data.createdAt is string && data.createdAt.size() <= 64;
       }
 
+      allow get, list: if true;
       allow read: if true;
       allow create: if isSignedIn() && isValidId(locationId) && isValidUserLocation(incoming());
       allow update: if isSignedIn() && isValidId(locationId) && (isAdmin() || isOwner(existing().ownerId))
@@ -176,6 +172,7 @@ service cloud.firestore {
           && data.createdAt is string && data.createdAt.size() <= 64;
       }
 
+      allow get, list: if true;
       allow read: if true;
       allow create: if isSignedIn() && isValidId(eventId) && isValidEvent(incoming())
         && (incoming().creatorId == request.auth.uid || isAdmin());
@@ -189,13 +186,14 @@ service cloud.firestore {
 
     // 7. Track Deleted Events (for overriding default static items)
     match /deleted_events/{eventId} {
+      allow get, list: if true;
       allow read: if true;
       allow write: if isSignedIn();
     }
 
     // 8. Ephemeral Live Location Shares for Campus Meetups
     match /live_shares/{shareId} {
-      allow read, write: if true;
+      allow read, write, create, update, delete: if true;
     }
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, 
@@ -27,7 +27,10 @@ import {
   Building,
   BookmarkCheck,
   Check,
-  CalendarDays
+  CalendarDays,
+  WifiOff,
+  HardDrive,
+  Database
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { cn } from '../../lib/utils';
@@ -78,6 +81,93 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isClearingCache, setIsClearingCache] = useState(false);
+  const [storageEstimate, setStorageEstimate] = useState<{ usageMB: string; quotaMB?: string } | null>(null);
+  const [cacheClearedSuccess, setCacheClearedSuccess] = useState(false);
+
+  // Read initial device storage estimate for cached assets & tiles
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.estimate) {
+      navigator.storage.estimate().then((estimate) => {
+        if (estimate.usage !== undefined) {
+          const usageMB = (estimate.usage / (1024 * 1024)).toFixed(1);
+          const quotaMB = estimate.quota ? (estimate.quota / (1024 * 1024)).toFixed(0) : undefined;
+          setStorageEstimate({ usageMB, quotaMB });
+        }
+      }).catch(() => {});
+    }
+  }, []);
+
+  const handleClearMapCache = async () => {
+    setIsClearingCache(true);
+    setCacheClearedSuccess(false);
+    try {
+      // 1. Clear CacheStorage API entries (map tiles, service worker asset caches)
+      if (typeof window !== 'undefined' && 'caches' in window) {
+        const cacheNames = await window.caches.keys();
+        await Promise.all(
+          cacheNames.map((name) => window.caches.delete(name))
+        );
+      }
+
+      // 2. Clear IndexedDB tile/map storage if initialized
+      if (typeof window !== 'undefined' && 'indexedDB' in window && indexedDB.databases) {
+        try {
+          const dbs = await indexedDB.databases();
+          for (const dbInfo of dbs) {
+            if (dbInfo.name && (
+              dbInfo.name.toLowerCase().includes('tile') || 
+              dbInfo.name.toLowerCase().includes('map') ||
+              dbInfo.name.toLowerCase().includes('leaflet') ||
+              dbInfo.name.toLowerCase().includes('cache')
+            )) {
+              indexedDB.deleteDatabase(dbInfo.name);
+            }
+          }
+        } catch {}
+      }
+
+      // 3. Clear any offline map localStorage cached fragments
+      if (typeof window !== 'undefined') {
+        try {
+          const keysToRemove: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (
+              key.startsWith('rsu_tile_') || 
+              key.startsWith('rsu_map_cache_') || 
+              key.startsWith('map_tile_') || 
+              key.startsWith('offline_tiles_')
+            )) {
+              keysToRemove.push(key);
+            }
+          }
+          keysToRemove.forEach(k => localStorage.removeItem(k));
+        } catch {}
+      }
+
+      // Brief pause to allow browser storage garbage collection
+      await new Promise(r => setTimeout(r, 450));
+
+      // Refresh storage estimate
+      if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.estimate) {
+        const estimate = await navigator.storage.estimate();
+        if (estimate.usage !== undefined) {
+          const usageMB = (estimate.usage / (1024 * 1024)).toFixed(1);
+          const quotaMB = estimate.quota ? (estimate.quota / (1024 * 1024)).toFixed(0) : undefined;
+          setStorageEstimate({ usageMB, quotaMB });
+        }
+      }
+
+      setCacheClearedSuccess(true);
+      showToast("✓ Cached map data cleared! Storage space freed.");
+      setTimeout(() => setCacheClearedSuccess(false), 5000);
+    } catch (err: any) {
+      showToast("Notice: " + (err?.message || "Could not clear all cache data"));
+    } finally {
+      setIsClearingCache(false);
+    }
+  };
 
   // New Event Form State
   const [newEvent, setNewEvent] = useState({
@@ -624,6 +714,71 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
                     <ChevronRight className="w-4 h-4 text-rsu-muted group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all" />
                   </button>
                 )}
+              </div>
+
+              {/* Offline Section */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between px-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-rsu-muted">
+                    Offline
+                  </p>
+                  {storageEstimate && (
+                    <span className="text-[10px] font-medium text-rsu-muted">
+                      Cache: <span className="font-mono font-bold text-rsu-navy dark:text-white">{storageEstimate.usageMB} MB</span>
+                    </span>
+                  )}
+                </div>
+
+                <div className="p-4 bg-rsu-card border border-rsu-border rounded-2xl shadow-sm space-y-3">
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-slate-500/10 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
+                      <WifiOff className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs font-black text-rsu-navy dark:text-white">
+                          Map Tiles & Offline Data
+                        </span>
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                          Local Cache
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-rsu-muted mt-0.5 leading-relaxed">
+                        Campus map tiles, building outlines, and navigation assets are saved locally for offline accessibility and fast loading.
+                      </p>
+                    </div>
+                  </div>
+
+                  {cacheClearedSuccess && (
+                    <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-2 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <span>Cached map data cleared! Device storage freed.</span>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleClearMapCache}
+                    disabled={isClearingCache}
+                    className={cn(
+                      "w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all active:scale-[0.99] cursor-pointer shadow-sm border",
+                      isClearingCache
+                        ? "bg-slate-100 text-slate-400 dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-not-allowed"
+                        : "bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/20 dark:hover:bg-red-950/40 dark:text-red-400 border-red-200 dark:border-red-900/40"
+                    )}
+                  >
+                    {isClearingCache ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Clearing Map Data...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Clear Cached Map Data</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Single Sign-On Notice */}

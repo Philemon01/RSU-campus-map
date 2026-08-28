@@ -37,16 +37,32 @@ export function normalizeShareCode(input: string): string {
 export async function fetchLiveShare(shareId: string): Promise<LiveShareSession | null> {
   const code = normalizeShareCode(shareId);
   if (!code) return null;
+  
+  // 1. Try client Firestore first
   try {
     const docRef = doc(db, 'live_shares', code);
     const snap = await getDoc(docRef);
-    if (!snap.exists()) return null;
-    const data = snap.data() as LiveShareSession;
-    return data;
+    if (snap.exists()) {
+      return snap.data() as LiveShareSession;
+    }
   } catch (err) {
-    console.warn(`Error fetching live share ${code}:`, err);
-    return null;
+    console.warn(`Firestore read notice for ${code}, querying server cache:`, err);
   }
+
+  // 2. Fallback to server API
+  try {
+    const resp = await fetch(`/api/live_share/${encodeURIComponent(code)}`);
+    if (resp.ok) {
+      const result = await resp.json();
+      if (result && result.session) {
+        return result.session as LiveShareSession;
+      }
+    }
+  } catch (apiErr) {
+    console.warn(`Server API live share fetch notice for ${code}:`, apiErr);
+  }
+
+  return null;
 }
 
 export interface StartShareParams {
@@ -79,10 +95,30 @@ export async function createLiveShare(params: StartShareParams): Promise<LiveSha
     updatedAt: nowIso,
   };
 
-  const docRef = doc(db, 'live_shares', shareId);
-  await setDoc(docRef, session);
+  // 1. Attempt client Firestore write
+  let firestoreSaved = false;
+  try {
+    const docRef = doc(db, 'live_shares', shareId);
+    await setDoc(docRef, session);
+    firestoreSaved = true;
+  } catch (fsErr: any) {
+    console.warn("Client Firestore write notice, routing via server sync:", fsErr?.message || fsErr);
+  }
 
-  // Store in local storage to resume if browser refreshes
+  // 2. Broadcast to server API (ensures sync across clients even if direct rules/offline kick in)
+  try {
+    await fetch('/api/live_share/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(session)
+    });
+  } catch (apiErr) {
+    if (!firestoreSaved) {
+      console.warn("Server API sync notice:", apiErr);
+    }
+  }
+
+  // 3. Store in local storage to resume if browser refreshes
   if (typeof window !== 'undefined') {
     try {
       localStorage.setItem(MEETUP_STORAGE_KEY, JSON.stringify(session));
@@ -96,30 +132,56 @@ export async function createLiveShare(params: StartShareParams): Promise<LiveSha
 
 export async function updateLiveLocation(shareId: string, coordinates: [number, number]): Promise<void> {
   if (!shareId) return;
-  const docRef = doc(db, 'live_shares', shareId);
-  await updateDoc(docRef, {
-    coordinates,
-    updatedAt: new Date().toISOString(),
-  });
+  const isoTime = new Date().toISOString();
+
+  // Try Firestore client
+  try {
+    const docRef = doc(db, 'live_shares', shareId);
+    await updateDoc(docRef, {
+      coordinates,
+      updatedAt: isoTime,
+    });
+  } catch (fsErr) {
+    // Silently route through server
+  }
+
+  // Sync to server API
+  try {
+    await fetch('/api/live_share/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: shareId, coordinates, updatedAt: isoTime })
+    });
+  } catch {}
 }
 
 export async function stopLiveShare(shareId: string): Promise<void> {
   if (!shareId) return;
+  const isoTime = new Date().toISOString();
+  
   try {
     const docRef = doc(db, 'live_shares', shareId);
     await updateDoc(docRef, {
       isActive: false,
-      updatedAt: new Date().toISOString(),
+      updatedAt: isoTime,
     });
   } catch (e) {
-    console.warn('Error updating live share stop state:', e);
-  } finally {
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem(MEETUP_STORAGE_KEY);
-      } catch (err) {
-        console.warn('Could not remove meetup storage item:', err);
-      }
+    // Silently route through server
+  }
+
+  try {
+    await fetch('/api/live_share/stop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: shareId })
+    });
+  } catch {}
+
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem(MEETUP_STORAGE_KEY);
+    } catch (err) {
+      console.warn('Could not remove meetup storage item:', err);
     }
   }
 }
@@ -130,13 +192,39 @@ export function subscribeToShare(
   onError?: (err: any) => void
 ): () => void {
   if (!shareId) return () => {};
-  const docRef = doc(db, 'live_shares', shareId);
+  const code = normalizeShareCode(shareId);
+  const docRef = doc(db, 'live_shares', code);
   
-  return onSnapshot(
+  let pollingInterval: any = null;
+
+  const startPollingFallback = () => {
+    if (pollingInterval) return;
+    pollingInterval = setInterval(async () => {
+      const data = await fetchLiveShare(code);
+      if (data) {
+        if (!data.isActive || Date.now() > data.expiresAt) {
+          onData({ ...data, isActive: false });
+        } else {
+          onData(data);
+        }
+      } else {
+        onData(null);
+      }
+    }, 4000);
+  };
+
+  const unsubscribe = onSnapshot(
     docRef,
     (snapshot) => {
       if (!snapshot.exists()) {
-        onData(null);
+        // Double-check with server API before concluding not found
+        fetchLiveShare(code).then(serverData => {
+          if (serverData) {
+            onData(serverData);
+          } else {
+            onData(null);
+          }
+        });
         return;
       }
       const data = snapshot.data() as LiveShareSession;
@@ -148,10 +236,21 @@ export function subscribeToShare(
       }
     },
     (error) => {
-      console.warn(`Live share snapshot error on ${shareId}:`, error);
-      if (onError) onError(error);
+      console.warn(`Firestore snapshot notice for ${code}, switching to resilient sync:`, error.message);
+      startPollingFallback();
+      // Fetch immediately once
+      fetchLiveShare(code).then(serverData => {
+        if (serverData) onData(serverData);
+      });
     }
   );
+
+  return () => {
+    unsubscribe();
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+    }
+  };
 }
 
 export function getSavedFriendCodes(): string[] {

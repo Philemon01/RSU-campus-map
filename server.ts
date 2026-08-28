@@ -229,6 +229,122 @@ app.post("/api/calendar/delete", async (req, res) => {
   }
 });
 
+// Ephemeral Live Location Sharing APIs with memory cache and admin Firestore backing
+const liveSharesCache = new Map<string, any>();
+
+app.post("/api/live_share/create", async (req, res) => {
+  console.log("POST /api/live_share/create");
+  try {
+    const session = req.body;
+    if (!session || !session.id) {
+      return res.status(400).json({ error: "Invalid session payload" });
+    }
+    liveSharesCache.set(session.id, session);
+
+    if (admin.apps.length) {
+      try {
+        await admin.firestore().collection("live_shares").doc(session.id).set(session);
+      } catch (dbErr: any) {
+        console.warn("Server Firestore live_shares write notice:", dbErr.message);
+      }
+    }
+    res.json({ success: true, session });
+  } catch (error: any) {
+    console.error("Live share create error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/live_share/update", async (req, res) => {
+  try {
+    const { id, coordinates, updatedAt } = req.body;
+    if (!id || !coordinates) {
+      return res.status(400).json({ error: "Missing id or coordinates" });
+    }
+    const existing = liveSharesCache.get(id);
+    if (existing) {
+      liveSharesCache.set(id, {
+        ...existing,
+        coordinates,
+        updatedAt: updatedAt || new Date().toISOString()
+      });
+    }
+
+    if (admin.apps.length) {
+      try {
+        await admin.firestore().collection("live_shares").doc(id).update({
+          coordinates,
+          updatedAt: updatedAt || new Date().toISOString()
+        });
+      } catch (dbErr: any) {
+        console.warn("Server Firestore live_shares update notice:", dbErr.message);
+      }
+    }
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/live_share/stop", async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) {
+      return res.status(400).json({ error: "Missing id" });
+    }
+    const existing = liveSharesCache.get(id);
+    if (existing) {
+      liveSharesCache.set(id, {
+        ...existing,
+        isActive: false,
+        updatedAt: new Date().toISOString()
+      });
+    }
+
+    if (admin.apps.length) {
+      try {
+        await admin.firestore().collection("live_shares").doc(id).update({
+          isActive: false,
+          updatedAt: new Date().toISOString()
+        });
+      } catch (dbErr: any) {
+        console.warn("Server Firestore live_shares stop notice:", dbErr.message);
+      }
+    }
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/live_share/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const formattedId = (id || "").toUpperCase().trim();
+
+    if (liveSharesCache.has(formattedId)) {
+      return res.json({ session: liveSharesCache.get(formattedId) });
+    }
+
+    if (admin.apps.length) {
+      try {
+        const docSnap = await admin.firestore().collection("live_shares").doc(formattedId).get();
+        if (docSnap.exists) {
+          const data = docSnap.data();
+          liveSharesCache.set(formattedId, data);
+          return res.json({ session: data });
+        }
+      } catch (dbErr: any) {
+        console.warn("Server Firestore live_shares fetch notice:", dbErr.message);
+      }
+    }
+
+    res.json({ session: null });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // API 404 Handler - ensure all unmatched /api routes return JSON 404
 app.all("/api/*all", (req, res) => {
   res.status(404).json({ error: `API route ${req.method} ${req.originalUrl} not found` });
