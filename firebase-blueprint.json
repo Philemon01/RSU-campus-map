@@ -118,6 +118,15 @@
         "updatedAt": { "type": "string" }
       },
       "required": ["id", "userId", "userName", "coordinates", "expiresAt", "isActive", "createdAt", "updatedAt"]
+    },
+    "DeletedEvent": {
+      "title": "Deleted Event Marker",
+      "description": "Marker tracking deleted event IDs.",
+      "type": "object",
+      "properties": {
+        "deletedAt": { "type": "string" },
+        "deletedBy": { "type": "string" }
+      }
     }
   },
   "firestore": {
@@ -148,6 +157,10 @@
     "/events/{eventId}": {
       "schema": "CampusEvent",
       "description": "Campus events posted and moderated by students and administrators."
+    },
+    "/deleted_events/{eventId}": {
+      "schema": "DeletedEvent",
+      "description": "Tombstones for deleted events to sync across clients."
     }
   }
 }
