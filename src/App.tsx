@@ -1855,6 +1855,12 @@ export default function App() {
         toggleEvents={handleToggleEvents}
         toggleTimetable={handleToggleTimetable}
         toggleMeetup={handleToggleMeetup}
+        toggleProfile={handleToggleProfile}
+        onToggleChat={handleToggleChat}
+        isSatelliteView={isSatelliteView}
+        setIsSatelliteView={setIsSatelliteView}
+        handleLocateMe={handleLocateMe}
+        isFollowingUser={isFollowingUser}
         user={currentUser}
         onSignIn={() => handleSignIn(false)}
         onSignInRedirect={() => handleSignIn(true)}
@@ -1862,6 +1868,9 @@ export default function App() {
         onOpenTerms={() => { window.location.href = '/terms.html'; }}
         onOpenPrivacy={() => { window.location.href = '/privacy.html'; }}
         onNavigateHome={() => navigate('/')}
+        eventsCount={campusEvents.length}
+        activeFriendsCount={friendBeacons.filter(b => b.session.isActive && Date.now() < b.session.expiresAt).length}
+        isLiveSharing={!!(activeLiveShareSession?.isActive && Date.now() < (activeLiveShareSession?.expiresAt || 0))}
       />
 
       {/* Meetup & Live Location Sharing Modal */}
