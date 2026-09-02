@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Syne:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -7,48 +7,60 @@
 :root {
   --rsu-navy: #0F172A;
   --rsu-navy-light: #1E293B;
-  --rsu-green: #22C55E;
+  --rsu-blue: #2563EB;
+  --rsu-green: #16A34A;
+  --rsu-red: #DC2626;
   --rsu-white: #FFFFFF;
+  --rsu-black: #0F172A;
   --rsu-bg: #F8FAFC;
   --rsu-text: #0F172A;
   --rsu-card: #FFFFFF;
   --rsu-border: #E2E8F0;
   --rsu-muted: #64748B;
-  --rsu-orange: #3B82F6;
-  --rsu-red: #DC2626;
+  --rsu-orange: #2563EB;
 }
 
 /* Dark Mode Overrides */
 .dark {
-  --rsu-bg: #0F172A;
+  --rsu-bg: #0B1120;
   --rsu-text: #F8FAFC;
   --rsu-card: #1E293B;
   --rsu-border: #334155;
   --rsu-muted: #94A3B8;
+  --rsu-blue: #3B82F6;
+  --rsu-green: #22C55E;
+  --rsu-red: #EF4444;
 }
 
 @theme {
-  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Syne", sans-serif;
+  --font-serif: "Lora", "Newsreader", Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-sans: "Lora", "Newsreader", Georgia, serif;
+  --font-display: "Newsreader", "Lora", Georgia, serif;
   --color-rsu-navy: var(--rsu-navy);
   --color-rsu-navy-light: var(--rsu-navy-light);
+  --color-rsu-blue: var(--rsu-blue);
   --color-rsu-green: var(--rsu-green);
+  --color-rsu-red: var(--rsu-red);
   --color-rsu-white: var(--rsu-white);
+  --color-rsu-black: var(--rsu-black);
   --color-rsu-bg: var(--rsu-bg);
   --color-rsu-text: var(--rsu-text);
   --color-rsu-card: var(--rsu-card);
   --color-rsu-border: var(--rsu-border);
   --color-rsu-muted: var(--rsu-muted);
-  --color-rsu-orange: var(--rsu-orange);
-  --color-rsu-red: var(--rsu-red);
+  --color-rsu-orange: var(--rsu-blue);
 }
 
 html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
-  font-family: var(--font-sans);
+  font-family: var(--font-serif);
+  font-size: 14.5px;
+  line-height: 1.55;
   transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .leaflet-container {

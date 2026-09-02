@@ -120,11 +120,11 @@ export const EventsPanel: React.FC<EventsPanelProps> = ({
 
   const getCategoryColor = (cat: string) => {
     switch(cat) {
-      case 'academic': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300';
-      case 'social': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/60 dark:text-purple-300';
-      case 'sports': return 'bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300';
-      case 'conference': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/60 dark:text-orange-300';
-      default: return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+      case 'academic': return 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800';
+      case 'social': return 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700';
+      case 'sports': return 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800';
+      case 'conference': return 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700';
+      default: return 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700';
     }
   };
 
@@ -697,7 +697,7 @@ export const EventsPanel: React.FC<EventsPanelProps> = ({
                         {/* Directions / Locate Button */}
                         <button
                           onClick={() => onNavigateTo(event.locationId)}
-                          className="py-2 px-3 bg-rsu-orange hover:bg-orange-600 text-white transition-all rounded-xl flex items-center justify-center gap-1 text-[10px] font-black uppercase tracking-wider cursor-pointer shadow-sm active:scale-95"
+                          className="py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white transition-all rounded-xl flex items-center justify-center gap-1 text-[10px] font-black uppercase tracking-wider cursor-pointer shadow-sm active:scale-95"
                           title="Get directions to venue"
                         >
                           <span>Directions</span>

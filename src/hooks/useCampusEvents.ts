@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   collection, 
   doc, 
@@ -210,7 +210,7 @@ export function useCampusEvents(currentUser: User | null) {
   }, [currentUser?.uid]);
 
   // Compute merged events list
-  const allEvents: CampusEvent[] = [
+  const allEvents: CampusEvent[] = useMemo(() => [
     // Include default events that have not been deleted
     ...initialDefaultEvents.filter(e => !deletedEventIds.includes(e.id)),
     // Include user and admin events from Firestore that have not been deleted
@@ -220,7 +220,7 @@ export function useCampusEvents(currentUser: User | null) {
     const dateComp = (a.date || '').localeCompare(b.date || '');
     if (dateComp !== 0) return dateComp;
     return (a.startTime || '').localeCompare(b.startTime || '');
-  });
+  }), [deletedEventIds, firestoreEvents]);
 
   const isAdmin = isUserAdmin(currentUser);
 
@@ -282,7 +282,7 @@ export function useCampusEvents(currentUser: User | null) {
   }, [currentUser, rsvpedEventIds]);
 
   // Filtered list of events the user RSVPed to
-  const rsvpedEvents: CampusEvent[] = allEvents.filter(e => rsvpedEventIds.includes(e.id));
+  const rsvpedEvents: CampusEvent[] = useMemo(() => allEvents.filter(e => rsvpedEventIds.includes(e.id)), [allEvents, rsvpedEventIds]);
 
   // Add a new event
   const addEvent = useCallback(async (eventData: Omit<CampusEvent, 'id' | 'createdAt' | 'creatorId' | 'creatorEmail' | 'isCustom'>): Promise<CampusEvent> => {

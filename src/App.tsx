@@ -234,7 +234,23 @@ export default function App() {
     return null;
   });
   const [savedFriendCodes, setSavedFriendCodes] = useState<string[]>(() => getSavedFriendCodes());
-  const [friendBeacons, setFriendBeacons] = useState<FriendBeacon[]>([]);
+  const [friendSessions, setFriendSessions] = useState<Record<string, LiveShareSession | null>>({});
+
+  const friendBeacons: FriendBeacon[] = useMemo(() => {
+    const beacons: FriendBeacon[] = [];
+    Object.entries(friendSessions).forEach(([, session]) => {
+      if (!session || !session.isActive || Date.now() > session.expiresAt) return;
+      let distanceMeters: number | undefined = undefined;
+      if (userLocation && session.coordinates) {
+        distanceMeters = getDistanceInMeters(userLocation, session.coordinates);
+      }
+      beacons.push({
+        session,
+        distanceMeters,
+      });
+    });
+    return beacons;
+  }, [friendSessions, userLocation]);
 
   const [customLocations, setCustomLocations] = useState<Location[]>([]);
 
@@ -362,7 +378,7 @@ export default function App() {
     });
 
     return () => unsubscribe();
-  }, [currentUser]);
+  }, [currentUser?.uid]);
 
   const [isSigningIn, setIsSigningIn] = useState(false);
 
@@ -483,7 +499,7 @@ export default function App() {
     });
 
     return () => unsubscribe();
-  }, [currentUser]);
+  }, [currentUser?.uid]);
 
   const findClosestLocation = (lat: number, lng: number): Location | null => {
     let closest: Location | null = null;
@@ -600,39 +616,21 @@ export default function App() {
   }, [userLocation?.[0], userLocation?.[1], activeLiveShareSession?.id, activeLiveShareSession?.isActive]);
 
   // Subscribe to live updates for all connected friend beacons
+  const savedFriendCodesKey = savedFriendCodes.join(',');
   useEffect(() => {
     if (savedFriendCodes.length === 0) {
-      setFriendBeacons([]);
+      setFriendSessions({});
       return;
     }
 
-    const sessionsMap: Record<string, LiveShareSession | null> = {};
     const unsubs: (() => void)[] = [];
-
-    const recalculateBeacons = () => {
-      const beacons: FriendBeacon[] = [];
-      Object.entries(sessionsMap).forEach(([code, session]) => {
-        if (!session || !session.isActive || Date.now() > session.expiresAt) return;
-        let distanceMeters: number | undefined = undefined;
-        if (userLocation && session.coordinates) {
-          distanceMeters = getDistanceInMeters(userLocation, session.coordinates);
-        }
-        beacons.push({
-          session,
-          distanceMeters,
-        });
-      });
-      setFriendBeacons(prev => {
-        // Prevent triggering re-render if count is zero and prev is already empty
-        if (prev.length === 0 && beacons.length === 0) return prev;
-        return beacons;
-      });
-    };
 
     savedFriendCodes.forEach((code) => {
       const unsub = subscribeToShare(code, (session) => {
-        sessionsMap[code] = session;
-        recalculateBeacons();
+        setFriendSessions(prev => {
+          if (prev[code] === session) return prev;
+          return { ...prev, [code]: session };
+        });
       });
       unsubs.push(unsub);
     });
@@ -640,7 +638,7 @@ export default function App() {
     return () => {
       unsubs.forEach(u => u());
     };
-  }, [savedFriendCodes.join(','), userLocation?.[0], userLocation?.[1]]);
+  }, [savedFriendCodesKey]);
 
   const handleShareRoute = () => {
     if (!selectedLocation) {
@@ -714,24 +712,23 @@ export default function App() {
         );
         setPlannedRoutes(routes);
         lastRouteCoordsRef.current = { start, end };
+
+        if (routes.length > 0) {
+          const activeRoute = routes.find(r => r.id === selectedRouteId) || routes[0];
+          setNavigationPath(activeRoute.path);
+          setManeuvers(activeRoute.maneuvers);
+        }
       } else {
         setPlannedRoutes(prev => prev.length === 0 ? prev : []);
         lastRouteCoordsRef.current = null;
+        if (!isNavigating) {
+          setNavigationPath(null);
+          setManeuvers([]);
+        }
       }
     };
     updateRoutes();
-  }, [selectedLocation?.id, startLocation?.id, userLocation?.[0], userLocation?.[1]]);
-
-  useEffect(() => {
-    if (plannedRoutes.length > 0) {
-      const activeRoute = plannedRoutes.find(r => r.id === selectedRouteId) || plannedRoutes[0];
-      setNavigationPath(activeRoute.path);
-      setManeuvers(activeRoute.maneuvers);
-    } else if (!isNavigating) {
-      setNavigationPath(prev => prev === null ? null : null);
-      setManeuvers(prev => prev.length === 0 ? prev : []);
-    }
-  }, [selectedRouteId, plannedRoutes, isNavigating]);
+  }, [selectedLocation?.id, startLocation?.id, userLocation?.[0], userLocation?.[1], selectedRouteId, isNavigating]);
 
   // Handle position watch
   useEffect(() => {
@@ -1500,60 +1497,52 @@ export default function App() {
   // Mutually exclusive panel toggles
   const handleToggleTimetable = () => {
     setIsTimetableOpen(prev => {
-      const next = !prev;
-      if (next) {
-        setIsProfileOpen(false);
-        setIsEventsPanelOpen(false);
-        setIsChatOpen(false);
-        setIsMenuOpen(false);
-        setIsMeetupOpen(false);
-      }
-      return next;
+      const willOpen = !prev;
+      return willOpen;
     });
+    setIsProfileOpen(false);
+    setIsEventsPanelOpen(false);
+    setIsChatOpen(false);
+    setIsMenuOpen(false);
+    setIsMeetupOpen(false);
     setOpenedFromProfile(false);
   };
 
   const handleToggleProfile = () => {
     setIsProfileOpen(prev => {
-      const next = !prev;
-      if (next) {
-        setIsTimetableOpen(false);
-        setIsEventsPanelOpen(false);
-        setIsChatOpen(false);
-        setIsMenuOpen(false);
-        setIsMeetupOpen(false);
-      }
-      return next;
+      const willOpen = !prev;
+      return willOpen;
     });
+    setIsTimetableOpen(false);
+    setIsEventsPanelOpen(false);
+    setIsChatOpen(false);
+    setIsMenuOpen(false);
+    setIsMeetupOpen(false);
     setOpenedFromProfile(false);
   };
 
   const handleToggleEvents = () => {
     setIsEventsPanelOpen(prev => {
-      const next = !prev;
-      if (next) {
-        setIsTimetableOpen(false);
-        setIsProfileOpen(false);
-        setIsChatOpen(false);
-        setIsMenuOpen(false);
-        setIsMeetupOpen(false);
-      }
-      return next;
+      const willOpen = !prev;
+      return willOpen;
     });
+    setIsTimetableOpen(false);
+    setIsProfileOpen(false);
+    setIsChatOpen(false);
+    setIsMenuOpen(false);
+    setIsMeetupOpen(false);
   };
 
   const handleToggleChat = () => {
     setIsChatOpen(prev => {
-      const next = !prev;
-      if (next) {
-        setIsTimetableOpen(false);
-        setIsProfileOpen(false);
-        setIsEventsPanelOpen(false);
-        setIsMenuOpen(false);
-        setIsMeetupOpen(false);
-      }
-      return next;
+      const willOpen = !prev;
+      return willOpen;
     });
+    setIsTimetableOpen(false);
+    setIsProfileOpen(false);
+    setIsEventsPanelOpen(false);
+    setIsMenuOpen(false);
+    setIsMeetupOpen(false);
   };
 
   const handleChatOpenChange = (open: boolean) => {
@@ -1569,16 +1558,14 @@ export default function App() {
 
   const handleToggleMeetup = () => {
     setIsMeetupOpen(prev => {
-      const next = !prev;
-      if (next) {
-        setIsTimetableOpen(false);
-        setIsProfileOpen(false);
-        setIsEventsPanelOpen(false);
-        setIsChatOpen(false);
-        setIsMenuOpen(false);
-      }
-      return next;
+      const willOpen = !prev;
+      return willOpen;
     });
+    setIsTimetableOpen(false);
+    setIsProfileOpen(false);
+    setIsEventsPanelOpen(false);
+    setIsChatOpen(false);
+    setIsMenuOpen(false);
   };
 
   const handleAddFriendCode = async (code: string): Promise<boolean> => {

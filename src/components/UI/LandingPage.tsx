@@ -181,7 +181,6 @@ export function LandingPage({
       intervalId = setInterval(() => {
         setSimProgress((prev) => {
           if (prev >= 100) {
-            setSimStepIdx((curIdx) => (curIdx + 1) % SIM_ROUTE.length);
             return 0;
           }
           return prev + 4;
@@ -190,6 +189,12 @@ export function LandingPage({
     }
     return () => clearInterval(intervalId);
   }, [panelMode]);
+
+  useEffect(() => {
+    if (simProgress === 0 && panelMode === 'map') {
+      setSimStepIdx((curIdx) => (curIdx + 1) % SIM_ROUTE.length);
+    }
+  }, [simProgress, panelMode]);
 
   // Handle live search
   const filteredSearch = searchQuery.trim()
@@ -323,14 +328,14 @@ export function LandingPage({
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-base sm:text-lg font-display font-black tracking-tight leading-none uppercase text-slate-950 dark:text-white">
+              <span className="text-sm sm:text-base font-display font-bold tracking-tight leading-none text-slate-950 dark:text-white">
                 Campus<span className="text-blue-600 dark:text-blue-400">Gryd</span>
               </span>
               <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700">
                 RSU
               </span>
             </div>
-            <span className="hidden lg:block text-[8.5px] font-mono font-bold text-slate-500 uppercase tracking-wider leading-none mt-0.5">
+            <span className="hidden lg:block text-[8.5px] font-mono font-medium text-slate-500 tracking-wider leading-none mt-0.5">
               Rivers State University
             </span>
           </div>
@@ -544,33 +549,33 @@ export function LandingPage({
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="max-w-3xl space-y-3.5"
+          className="max-w-3xl space-y-3"
         >
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-mono font-medium tracking-wide bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            RSU CAMPUS NAVIGATION PLATFORM
+            RSU Campus Navigation Platform
           </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-black tracking-tight text-slate-950 dark:text-white uppercase leading-[1.05]">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold tracking-normal text-slate-950 dark:text-white leading-[1.2]">
             Go anywhere, <br className="hidden sm:inline" />
-            <span className="text-slate-500 dark:text-slate-400">
+            <span className="text-slate-500 dark:text-slate-400 font-normal italic">
               move the way you want
             </span>
           </h1>
 
           <p className={cn(
-            "text-xs sm:text-sm max-w-xl mx-auto leading-relaxed font-medium transition-colors",
+            "text-xs sm:text-sm max-w-xl mx-auto leading-relaxed font-normal transition-colors",
             isDarkMode ? "text-slate-400" : "text-slate-600"
           )}>
             Locate lecture halls in minutes, hop in, and get to your destination safely and seamlessly across Rivers State University with CampusGryd.
           </p>
 
           {/* Primary Sleek 3D Black Pill CTA */}
-          <div className="pt-1 flex flex-wrap items-center justify-center gap-3">
+          <div className="pt-1 flex flex-wrap items-center justify-center gap-2.5">
             <button
               onClick={() => onNavigateToMap()}
               className={cn(
-                "px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer shadow-xl border flex items-center gap-2.5 group font-mono",
+                "px-5 py-2.5 rounded-full text-xs font-semibold tracking-wide transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer shadow-lg border flex items-center gap-2 group",
                 isDarkMode 
                   ? "bg-white border-white text-slate-950 shadow-white/20 hover:bg-slate-100" 
                   : "bg-slate-950 border-slate-950 text-white shadow-slate-950/30 hover:bg-slate-900"
@@ -583,7 +588,7 @@ export function LandingPage({
             <button
               onClick={() => onNavigateToMap(null, true)}
               className={cn(
-                "px-5 py-3 rounded-full text-xs font-black uppercase tracking-widest border transition-all duration-300 hover:bg-slate-200/50 dark:hover:bg-slate-900/50 cursor-pointer flex items-center gap-2 font-mono",
+                "px-4 py-2.5 rounded-full text-xs font-semibold tracking-wide border transition-all duration-300 hover:bg-slate-200/50 dark:hover:bg-slate-900/50 cursor-pointer flex items-center gap-2",
                 isDarkMode ? "border-slate-800 text-slate-200" : "border-slate-300 text-slate-800"
               )}
             >
@@ -594,7 +599,7 @@ export function LandingPage({
             <button
               onClick={() => onNavigateToMap(null, false, false, true)}
               className={cn(
-                "px-5 py-3 rounded-full text-xs font-black uppercase tracking-widest border transition-all duration-300 hover:bg-emerald-500/10 cursor-pointer flex items-center gap-2 font-mono",
+                "px-4 py-2.5 rounded-full text-xs font-semibold tracking-wide border transition-all duration-300 hover:bg-emerald-500/10 cursor-pointer flex items-center gap-2",
                 isDarkMode ? "border-emerald-500/30 text-emerald-300 hover:border-emerald-500/50" : "border-emerald-300 text-emerald-700 bg-emerald-50/50"
               )}
             >
@@ -1037,11 +1042,11 @@ export function LandingPage({
         isDarkMode ? "bg-slate-900/60 border-slate-900" : "bg-white border-slate-200"
       )}>
         <div className="max-w-7xl mx-auto space-y-12">
-          <div className="text-center max-w-2xl mx-auto space-y-3">
-            <span className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+          <div className="text-center max-w-2xl mx-auto space-y-2.5">
+            <span className="text-[11px] font-mono font-semibold text-blue-600 dark:text-blue-400 tracking-wide">
               ENGINEERED FOR RSU STUDENTS &amp; FACULTY
             </span>
-            <h2 className="text-3xl sm:text-4xl font-display font-black uppercase text-slate-950 dark:text-white">
+            <h2 className="text-2xl sm:text-3xl font-display font-bold text-slate-950 dark:text-white leading-tight">
               Everything you need for campus mobility &amp; life
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
@@ -1052,21 +1057,21 @@ export function LandingPage({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {/* Capability Card 1 */}
             <div className={cn(
-              "p-7 rounded-3xl border transition-all duration-300 hover:shadow-xl space-y-4 relative overflow-hidden group",
+              "p-6 rounded-3xl border transition-all duration-300 hover:shadow-lg space-y-3.5 relative overflow-hidden group",
               isDarkMode ? "bg-slate-950 border-slate-850 hover:border-slate-700" : "bg-[#F8FAFC] border-slate-200 hover:border-slate-300"
             )}>
-              <div className="w-12 h-12 rounded-2xl bg-slate-950 text-white dark:bg-white dark:text-slate-950 flex items-center justify-center shadow-md">
-                <Navigation size={22} className="transform rotate-45" />
+              <div className="w-11 h-11 rounded-2xl bg-slate-950 text-white dark:bg-white dark:text-slate-950 flex items-center justify-center shadow-md">
+                <Navigation size={20} className="transform rotate-45" />
               </div>
-              <h3 className="text-lg font-display font-black uppercase text-slate-950 dark:text-white">
+              <h3 className="text-base font-display font-bold text-slate-950 dark:text-white">
                 Geodetic Turn Guidance
               </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
                 Step-by-step pedestrian routes mapped across RSU lecture theaters, Senate buildings, hostels, and sports arenas with precise walk time and distance estimates.
               </p>
               <button 
                 onClick={() => onNavigateToMap()}
-                className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 uppercase flex items-center gap-1 hover:gap-2 transition-all cursor-pointer pt-2"
+                className="text-xs font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1 hover:gap-2 transition-all cursor-pointer pt-1"
               >
                 <span>Launch Turn Guidance</span>
                 <ArrowRight size={13} />
@@ -1075,21 +1080,21 @@ export function LandingPage({
 
             {/* Capability Card 2 */}
             <div className={cn(
-              "p-7 rounded-3xl border transition-all duration-300 hover:shadow-xl space-y-4 relative overflow-hidden group",
+              "p-6 rounded-3xl border transition-all duration-300 hover:shadow-lg space-y-3.5 relative overflow-hidden group",
               isDarkMode ? "bg-slate-950 border-slate-850 hover:border-slate-700" : "bg-[#F8FAFC] border-slate-200 hover:border-slate-300"
             )}>
-              <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md">
-                <Calendar size={22} />
+              <div className="w-11 h-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md">
+                <Calendar size={20} />
               </div>
-              <h3 className="text-lg font-display font-black uppercase text-slate-950 dark:text-white">
+              <h3 className="text-base font-display font-bold text-slate-950 dark:text-white">
                 Course Timetable Sync
               </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
                 Sync your weekly lecture timetable. Get direct 1-tap navigation to your specific lecture hall, lab, or workshop before your class commences.
               </p>
               <button 
                 onClick={() => onNavigateToMap(null, true)}
-                className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 uppercase flex items-center gap-1 hover:gap-2 transition-all cursor-pointer pt-2"
+                className="text-xs font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1 hover:gap-2 transition-all cursor-pointer pt-1"
               >
                 <span>Open Timetable</span>
                 <ArrowRight size={13} />
@@ -1098,21 +1103,21 @@ export function LandingPage({
 
             {/* Capability Card 3 */}
             <div className={cn(
-              "p-7 rounded-3xl border transition-all duration-300 hover:shadow-xl space-y-4 relative overflow-hidden group",
+              "p-6 rounded-3xl border transition-all duration-300 hover:shadow-lg space-y-3.5 relative overflow-hidden group",
               isDarkMode ? "bg-slate-950 border-slate-850 hover:border-slate-700" : "bg-[#F8FAFC] border-slate-200 hover:border-slate-300"
             )}>
-              <div className="w-12 h-12 rounded-2xl bg-rose-600 text-white flex items-center justify-center shadow-md">
-                <Ticket size={22} />
+              <div className="w-11 h-11 rounded-2xl bg-rose-600 text-white flex items-center justify-center shadow-md">
+                <Ticket size={20} />
               </div>
-              <h3 className="text-lg font-display font-black uppercase text-slate-950 dark:text-white">
+              <h3 className="text-base font-display font-bold text-slate-950 dark:text-white">
                 Campus Events &amp; RSVP
               </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
                 Discover university symposiums, matriculation, faculty dinners, tech expos, and sports matches with instant RSVP confirmation and venue directions.
               </p>
               <a 
                 href="#events-section"
-                className="text-xs font-mono font-bold text-rose-600 dark:text-rose-400 uppercase flex items-center gap-1 hover:gap-2 transition-all cursor-pointer pt-2"
+                className="text-xs font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-1 hover:gap-2 transition-all cursor-pointer pt-1"
               >
                 <span>Explore Events &amp; RSVP</span>
                 <ArrowRight size={13} />
@@ -1121,21 +1126,21 @@ export function LandingPage({
 
             {/* Capability Card 4 */}
             <div className={cn(
-              "p-7 rounded-3xl border transition-all duration-300 hover:shadow-xl space-y-4 relative overflow-hidden group",
+              "p-6 rounded-3xl border transition-all duration-300 hover:shadow-lg space-y-3.5 relative overflow-hidden group",
               isDarkMode ? "bg-slate-950 border-slate-850 hover:border-slate-700" : "bg-[#F8FAFC] border-slate-200 hover:border-slate-300"
             )}>
-              <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md">
-                <Sparkles size={22} />
+              <div className="w-11 h-11 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md">
+                <Sparkles size={20} />
               </div>
-              <h3 className="text-lg font-display font-black uppercase text-slate-950 dark:text-white">
+              <h3 className="text-base font-display font-bold text-slate-950 dark:text-white">
                 Navi-bot AI Assistant
               </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
                 Ask Navi-bot conversational questions about clearance procedures, faculty office hours, exam centers, syllabus details, and pedestrian shortcuts.
               </p>
               <button 
                 onClick={() => onNavigateToMap()}
-                className="text-xs font-mono font-bold text-purple-600 dark:text-purple-400 uppercase flex items-center gap-1 hover:gap-2 transition-all cursor-pointer pt-2"
+                className="text-xs font-semibold text-purple-600 dark:text-purple-400 flex items-center gap-1 hover:gap-2 transition-all cursor-pointer pt-1"
               >
                 <span>Chat with Navi-bot</span>
                 <ArrowRight size={13} />
@@ -1144,21 +1149,21 @@ export function LandingPage({
 
             {/* Capability Card 5 */}
             <div className={cn(
-              "p-7 rounded-3xl border transition-all duration-300 hover:shadow-xl space-y-4 relative overflow-hidden group",
+              "p-6 rounded-3xl border transition-all duration-300 hover:shadow-lg space-y-3.5 relative overflow-hidden group",
               isDarkMode ? "bg-slate-950 border-slate-850 hover:border-slate-700" : "bg-[#F8FAFC] border-slate-200 hover:border-slate-300"
             )}>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md">
-                <Users size={22} />
+              <div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md">
+                <Users size={20} />
               </div>
-              <h3 className="text-lg font-display font-black uppercase text-slate-950 dark:text-white">
+              <h3 className="text-base font-display font-bold text-slate-950 dark:text-white">
                 Opt-In Social Meetups
               </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
                 Share a temporary live location beacon with course mates via private share codes. Disconnect anytime with zero tracking telemetry.
               </p>
               <button 
                 onClick={() => onNavigateToMap(null, false, false, true)}
-                className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase flex items-center gap-1 hover:gap-2 transition-all cursor-pointer pt-2"
+                className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 hover:gap-2 transition-all cursor-pointer pt-1"
               >
                 <span>Start Meetup Share</span>
                 <ArrowRight size={13} />
@@ -1167,21 +1172,21 @@ export function LandingPage({
 
             {/* Capability Card 6 */}
             <div className={cn(
-              "p-7 rounded-3xl border transition-all duration-300 hover:shadow-xl space-y-4 relative overflow-hidden group",
+              "p-6 rounded-3xl border transition-all duration-300 hover:shadow-lg space-y-3.5 relative overflow-hidden group",
               isDarkMode ? "bg-slate-950 border-slate-850 hover:border-slate-700" : "bg-[#F8FAFC] border-slate-200 hover:border-slate-300"
             )}>
-              <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-md">
-                <MapPin size={22} />
+              <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-md">
+                <MapPin size={20} />
               </div>
-              <h3 className="text-lg font-display font-black uppercase text-slate-950 dark:text-white">
+              <h3 className="text-base font-display font-bold text-slate-950 dark:text-white">
                 Community Landmark Pinning
               </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
                 Pin custom department study spots, kiosk locations, or lecture annexes. Moderated by campus admins for verified accuracy.
               </p>
               <button 
                 onClick={() => onNavigateToMap()}
-                className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400 uppercase flex items-center gap-1 hover:gap-2 transition-all cursor-pointer pt-2"
+                className="text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1 hover:gap-2 transition-all cursor-pointer pt-1"
               >
                 <span>Contribute Landmark</span>
                 <ArrowRight size={13} />
@@ -1201,21 +1206,21 @@ export function LandingPage({
           {/* Section Header */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-mono font-medium tracking-wide bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                 <Ticket size={12} className="text-rose-500" />
-                <span>CAMPUS ACTIVITIES &amp; SYMPOSIUMS</span>
+                <span>Campus Activities &amp; Symposiums</span>
               </div>
-              <h2 className="text-3xl sm:text-4xl font-display font-black uppercase text-slate-950 dark:text-white">
+              <h2 className="text-2xl sm:text-3xl font-display font-bold text-slate-950 dark:text-white leading-tight">
                 RSU Campus Events &amp; RSVP
               </h2>
-              <p className="text-xs text-slate-600 dark:text-slate-400 max-w-xl font-medium">
+              <p className="text-xs text-slate-600 dark:text-slate-400 max-w-xl font-normal">
                 Stay updated with official academic summits, cultural festivals, sports matches, and career expos. Reserve your attendance and get instant turn-by-turn walking routes to the venue.
               </p>
             </div>
 
             <button
               onClick={() => onNavigateToMap(null, false, true)}
-              className="px-5 py-3 rounded-full text-xs font-black uppercase tracking-widest bg-rose-600 text-white hover:bg-rose-500 transition-all duration-300 shadow-lg shadow-rose-600/20 flex items-center gap-2 cursor-pointer shrink-0 self-start md:self-auto font-mono"
+              className="px-4 py-2.5 rounded-full text-xs font-semibold tracking-wide bg-rose-600 text-white hover:bg-rose-500 transition-all duration-300 shadow-md shadow-rose-600/20 flex items-center gap-2 cursor-pointer shrink-0 self-start md:self-auto"
             >
               <span>Open Events Hub</span>
               <ArrowRight size={14} />
@@ -1341,7 +1346,7 @@ export function LandingPage({
                         </div>
 
                         {/* Title */}
-                        <h3 className="text-base font-display font-black uppercase text-slate-950 dark:text-white leading-snug group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
+                        <h3 className="text-sm sm:text-base font-display font-bold text-slate-950 dark:text-white leading-snug group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
                           {event.title}
                         </h3>
 
@@ -1416,33 +1421,33 @@ export function LandingPage({
           
           {/* Main About Banner */}
           <div className="max-w-3xl mx-auto text-center space-y-4">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[10px] font-mono font-semibold tracking-wide bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
               <GraduationCap size={14} />
-              <span>ABOUT THE CAMPUSGRYD PLATFORM</span>
+              <span>About the CampusGryd Platform</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-black uppercase text-slate-950 dark:text-white tracking-tight">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-slate-950 dark:text-white tracking-tight leading-tight">
               Empowering 30,000+ Students with Spatial Intelligence
             </h2>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl mx-auto font-medium">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl mx-auto font-normal">
               CampusGryd is the dedicated geodetic navigation, course scheduling, and campus event ecosystem built specifically for Rivers State University (RSU), Port Harcourt.
             </p>
           </div>
 
           {/* 4 Core Pillars of CampusGryd */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
             
             {/* Pillar 1 */}
             <div className={cn(
-              "p-8 rounded-3xl border transition-all duration-300 space-y-4",
+              "p-6 sm:p-7 rounded-3xl border transition-all duration-300 space-y-3.5",
               isDarkMode ? "bg-slate-950 border-slate-850" : "bg-slate-50 border-slate-200"
             )}>
-              <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-600/20">
-                <Route size={22} />
+              <div className="w-11 h-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-600/20">
+                <Route size={20} />
               </div>
-              <h3 className="text-xl font-display font-black uppercase text-slate-950 dark:text-white">
+              <h3 className="text-base sm:text-lg font-display font-bold text-slate-950 dark:text-white">
                 1. Vector Pedestrian Navigation &amp; Routing
               </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
                 Traditional street mapping platforms fail within university campuses because they lack interior footpaths, lecture room alleys, and faculty gates. CampusGryd maps every pedestrian route across all faculties, halls, the Senate Complex, and hostels with sub-meter coordinate precision.
               </p>
               <ul className="space-y-2 pt-2 text-xs font-mono text-slate-700 dark:text-slate-300">
@@ -1463,16 +1468,16 @@ export function LandingPage({
 
             {/* Pillar 2 */}
             <div className={cn(
-              "p-8 rounded-3xl border transition-all duration-300 space-y-4",
+              "p-6 sm:p-7 rounded-3xl border transition-all duration-300 space-y-3.5",
               isDarkMode ? "bg-slate-950 border-slate-850" : "bg-slate-50 border-slate-200"
             )}>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/20">
-                <BookOpen size={22} />
+              <div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20">
+                <BookOpen size={20} />
               </div>
-              <h3 className="text-xl font-display font-black uppercase text-slate-950 dark:text-white">
+              <h3 className="text-base sm:text-lg font-display font-bold text-slate-950 dark:text-white">
                 2. Academic Timetable &amp; Lecture Venue Sync
               </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
                 Say goodbye to missed lectures and confusing venue codes like &ldquo;ETF Hall B&rdquo; or &ldquo;Faculty Workshop 3&rdquo;. CampusGryd links your department courses to physical buildings, enabling instant 1-tap route tracing straight to your seat before class commences.
               </p>
               <ul className="space-y-2 pt-2 text-xs font-mono text-slate-700 dark:text-slate-300">
@@ -1493,16 +1498,16 @@ export function LandingPage({
 
             {/* Pillar 3 */}
             <div className={cn(
-              "p-8 rounded-3xl border transition-all duration-300 space-y-4",
+              "p-6 sm:p-7 rounded-3xl border transition-all duration-300 space-y-3.5",
               isDarkMode ? "bg-slate-950 border-slate-850" : "bg-slate-50 border-slate-200"
             )}>
-              <div className="w-12 h-12 rounded-2xl bg-rose-600 text-white flex items-center justify-center shadow-lg shadow-rose-600/20">
-                <Ticket size={22} />
+              <div className="w-11 h-11 rounded-2xl bg-rose-600 text-white flex items-center justify-center shadow-md shadow-rose-600/20">
+                <Ticket size={20} />
               </div>
-              <h3 className="text-xl font-display font-black uppercase text-slate-950 dark:text-white">
+              <h3 className="text-base sm:text-lg font-display font-bold text-slate-950 dark:text-white">
                 3. Campus Events Hub &amp; Interactive RSVP
               </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
                 Stay tapped into university life. CampusGryd provides a centralized directory for all student union events, departmental dinners, matriculation rites, faculty summits, and sports rivalries with attendance RSVP tracking.
               </p>
               <ul className="space-y-2 pt-2 text-xs font-mono text-slate-700 dark:text-slate-300">
@@ -1523,16 +1528,16 @@ export function LandingPage({
 
             {/* Pillar 4 */}
             <div className={cn(
-              "p-8 rounded-3xl border transition-all duration-300 space-y-4",
+              "p-6 sm:p-7 rounded-3xl border transition-all duration-300 space-y-3.5",
               isDarkMode ? "bg-slate-950 border-slate-850" : "bg-slate-50 border-slate-200"
             )}>
-              <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-lg shadow-purple-600/20">
-                <Sparkles size={22} />
+              <div className="w-11 h-11 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-600/20">
+                <Sparkles size={20} />
               </div>
-              <h3 className="text-xl font-display font-black uppercase text-slate-950 dark:text-white">
+              <h3 className="text-base sm:text-lg font-display font-bold text-slate-950 dark:text-white">
                 4. Navi-bot AI Campus Helpdesk &amp; Guide
               </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
                 Integrated conversational intelligence grounded in Rivers State University context. Freshers can ask about clearance steps, faculty fees, hostel check-in rules, departmental offices, or optimal pathways across campus.
               </p>
               <ul className="space-y-2 pt-2 text-xs font-mono text-slate-700 dark:text-slate-300">
@@ -1583,64 +1588,64 @@ export function LandingPage({
           </div>
 
           {/* User Archetypes Grid (Who is CampusGryd for?) */}
-          <div className="space-y-8">
-            <div className="text-center space-y-2">
-              <span className="text-xs font-mono font-bold text-slate-500 uppercase tracking-widest">
+          <div className="space-y-6">
+            <div className="text-center space-y-1.5">
+              <span className="text-[11px] font-mono font-semibold text-slate-500 tracking-wide">
                 TAILORED CAMPUS EXPERIENCES
               </span>
-              <h3 className="text-2xl sm:text-3xl font-display font-black uppercase text-slate-950 dark:text-white">
+              <h3 className="text-xl sm:text-2xl font-display font-bold text-slate-950 dark:text-white">
                 Who Benefits from CampusGryd?
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               <div className={cn(
-                "p-6 rounded-3xl border space-y-3",
+                "p-5 rounded-2xl border space-y-2.5",
                 isDarkMode ? "bg-slate-950/80 border-slate-850" : "bg-white border-slate-200"
               )}>
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
-                  <School size={20} />
+                <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
+                  <School size={18} />
                 </div>
-                <h4 className="font-display font-black uppercase text-sm text-slate-950 dark:text-white">Freshers &amp; New Intakes</h4>
+                <h4 className="font-display font-bold text-sm text-slate-950 dark:text-white">Freshers &amp; New Intakes</h4>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                   Easily find Senate clearance centers, ICT centers, medical clinics, and bank branches without stress.
                 </p>
               </div>
 
               <div className={cn(
-                "p-6 rounded-3xl border space-y-3",
+                "p-5 rounded-2xl border space-y-2.5",
                 isDarkMode ? "bg-slate-950/80 border-slate-850" : "bg-white border-slate-200"
               )}>
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
-                  <Users size={20} />
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                  <Users size={18} />
                 </div>
-                <h4 className="font-display font-black uppercase text-sm text-slate-950 dark:text-white">Undergraduates</h4>
+                <h4 className="font-display font-bold text-sm text-slate-950 dark:text-white">Undergraduates</h4>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                   Navigate shifting lecture halls, sync course timetables, discover campus tech events, and RSVP with friends.
                 </p>
               </div>
 
               <div className={cn(
-                "p-6 rounded-3xl border space-y-3",
+                "p-5 rounded-2xl border space-y-2.5",
                 isDarkMode ? "bg-slate-950/80 border-slate-850" : "bg-white border-slate-200"
               )}>
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
-                  <Building2 size={20} />
+                <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
+                  <Building2 size={18} />
                 </div>
-                <h4 className="font-display font-black uppercase text-sm text-slate-950 dark:text-white">Faculty &amp; Staff</h4>
+                <h4 className="font-display font-bold text-sm text-slate-950 dark:text-white">Faculty &amp; Staff</h4>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                   Coordinate departmental meetings, find administrative offices, and publish verified academic conferences.
                 </p>
               </div>
 
               <div className={cn(
-                "p-6 rounded-3xl border space-y-3",
+                "p-5 rounded-2xl border space-y-2.5",
                 isDarkMode ? "bg-slate-950/80 border-slate-850" : "bg-white border-slate-200"
               )}>
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
-                  <Award size={20} />
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+                  <Award size={18} />
                 </div>
-                <h4 className="font-display font-black uppercase text-sm text-slate-950 dark:text-white">Visitors &amp; Guests</h4>
+                <h4 className="font-display font-bold text-sm text-slate-950 dark:text-white">Visitors &amp; Guests</h4>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                   Effortless parking and entrance navigation during matriculation, convocation ceremonies, and sports fixtures.
                 </p>
@@ -1651,32 +1656,32 @@ export function LandingPage({
           {/* Key Metrics / Platform Standards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center">
             <div className={cn(
-              "p-6 rounded-2xl border",
+              "p-5 rounded-2xl border",
               isDarkMode ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
             )}>
-              <p className="text-3xl sm:text-4xl font-display font-black text-blue-600 dark:text-blue-400">50+</p>
-              <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 mt-1">Geocoded Landmarks</p>
+              <p className="text-2xl sm:text-3xl font-display font-bold text-blue-600 dark:text-blue-400">50+</p>
+              <p className="text-[10px] font-mono font-medium tracking-wide text-slate-500 mt-1">Geocoded Landmarks</p>
             </div>
             <div className={cn(
-              "p-6 rounded-2xl border",
+              "p-5 rounded-2xl border",
               isDarkMode ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
             )}>
-              <p className="text-3xl sm:text-4xl font-display font-black text-emerald-600 dark:text-emerald-400">7+</p>
-              <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 mt-1">Major Faculties</p>
+              <p className="text-2xl sm:text-3xl font-display font-bold text-emerald-600 dark:text-emerald-400">7+</p>
+              <p className="text-[10px] font-mono font-medium tracking-wide text-slate-500 mt-1">Major Faculties</p>
             </div>
             <div className={cn(
-              "p-6 rounded-2xl border",
+              "p-5 rounded-2xl border",
               isDarkMode ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
             )}>
-              <p className="text-3xl sm:text-4xl font-display font-black text-rose-600 dark:text-rose-400">100%</p>
-              <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 mt-1">Pedestrian Path Coverage</p>
+              <p className="text-2xl sm:text-3xl font-display font-bold text-rose-600 dark:text-rose-400">100%</p>
+              <p className="text-[10px] font-mono font-medium tracking-wide text-slate-500 mt-1">Pedestrian Path Coverage</p>
             </div>
             <div className={cn(
-              "p-6 rounded-2xl border",
+              "p-5 rounded-2xl border",
               isDarkMode ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
             )}>
-              <p className="text-3xl sm:text-4xl font-display font-black text-purple-600 dark:text-purple-400">0</p>
-              <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 mt-1">Telemetry / Tracking</p>
+              <p className="text-2xl sm:text-3xl font-display font-bold text-purple-600 dark:text-purple-400">0</p>
+              <p className="text-[10px] font-mono font-medium tracking-wide text-slate-500 mt-1">Telemetry / Tracking</p>
             </div>
           </div>
         </div>
@@ -1685,11 +1690,11 @@ export function LandingPage({
       {/* LANDMARK REGISTRY EXPLORER SECTION */}
       <section id="landmarks-section" className="py-20 px-6 lg:px-16 max-w-7xl mx-auto w-full space-y-10">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-2">
-            <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
-              CAMPUS NODES & FACULTIES
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-mono font-semibold text-emerald-600 dark:text-emerald-400 tracking-wide">
+              CAMPUS NODES &amp; FACULTIES
             </span>
-            <h2 className="text-3xl sm:text-4xl font-display font-black uppercase text-slate-950 dark:text-white">
+            <h2 className="text-2xl sm:text-3xl font-display font-bold text-slate-950 dark:text-white">
               Explore RSU Landmarks
             </h2>
           </div>
@@ -1735,10 +1740,10 @@ export function LandingPage({
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-display font-black uppercase text-slate-950 dark:text-white group-hover:text-blue-600 transition-colors leading-tight">
+                    <h3 className="text-base font-display font-bold text-slate-950 dark:text-white group-hover:text-blue-600 transition-colors leading-snug">
                       {loc.officialName}
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-normal">
                       {loc.landmark}
                     </p>
                   </div>
@@ -1760,11 +1765,11 @@ export function LandingPage({
         isDarkMode ? "bg-slate-900/40 border-slate-900" : "bg-[#F8FAFC] border-slate-200"
       )}>
         <div className="max-w-4xl mx-auto space-y-8">
-          <div className="text-center space-y-2">
-            <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
+          <div className="text-center space-y-1.5">
+            <span className="text-[11px] font-mono font-semibold text-emerald-600 dark:text-emerald-400 tracking-wide">
               PEDESTRIAN DISTANCE CALCULATOR
             </span>
-            <h2 className="text-3xl sm:text-4xl font-display font-black uppercase text-slate-950 dark:text-white">
+            <h2 className="text-2xl sm:text-3xl font-display font-bold text-slate-950 dark:text-white">
               Instant Walk Time Estimator
             </h2>
           </div>
@@ -1829,16 +1834,16 @@ export function LandingPage({
 
       {/* FREQUENTLY ASKED QUESTIONS SECTION */}
       <section id="faq-section" className="py-20 px-6 lg:px-16 max-w-4xl mx-auto w-full space-y-10">
-        <div className="text-center space-y-2">
-          <span className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+        <div className="text-center space-y-1.5">
+          <span className="text-[11px] font-mono font-semibold text-blue-600 dark:text-blue-400 tracking-wide">
             STUDENT ASSISTANCE
           </span>
-          <h2 className="text-3xl sm:text-4xl font-display font-black uppercase text-slate-950 dark:text-white">
+          <h2 className="text-2xl sm:text-3xl font-display font-bold text-slate-950 dark:text-white">
             Frequently Asked Questions
           </h2>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {faqs.map((faq, idx) => (
             <div 
               key={idx}
@@ -1849,13 +1854,13 @@ export function LandingPage({
             >
               <button
                 onClick={() => setExpandedFaq(expandedFaq === idx ? null : idx)}
-                className="w-full p-6 text-left flex items-center justify-between gap-4 font-display font-black text-sm sm:text-base uppercase text-slate-950 dark:text-white cursor-pointer"
+                className="w-full p-5 text-left flex items-center justify-between gap-4 font-display font-bold text-sm sm:text-base text-slate-950 dark:text-white cursor-pointer"
               >
                 <span>{faq.q}</span>
-                <ChevronRight size={18} className={cn("transition-transform duration-300 shrink-0 text-slate-400", expandedFaq === idx ? "transform rotate-90" : "")} />
+                <ChevronRight size={16} className={cn("transition-transform duration-300 shrink-0 text-slate-400", expandedFaq === idx ? "transform rotate-90" : "")} />
               </button>
               {expandedFaq === idx && (
-                <div className="px-6 pb-6 text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium border-t border-slate-100 dark:border-slate-800/80 pt-4">
+                <div className="px-5 pb-5 text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-normal border-t border-slate-100 dark:border-slate-800/80 pt-3">
                   {faq.a}
                 </div>
               )}

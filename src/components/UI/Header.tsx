@@ -37,7 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex flex-col justify-center min-w-0">
             <h1 
               style={{ color: isDarkMode ? '#FFFFFF' : '#0F172A' }}
-              className="text-xs sm:text-sm font-display font-black uppercase tracking-tight leading-none truncate"
+              className="text-xs sm:text-sm font-display font-bold tracking-tight leading-none truncate"
             >
               <span className="hidden sm:inline">Rivers State University</span>
               <span className="inline sm:hidden">RSU</span>

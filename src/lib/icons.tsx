@@ -47,13 +47,13 @@ export const createCustomIcon = (type: string, isActive: boolean, isHighlighted:
       html: `
         <div class="relative flex items-center justify-center w-14 h-14 marker-inner-active">
           <!-- Multi-tier pulsating radar waves -->
-          <div class="absolute w-16 h-16 bg-rsu-orange/25 rounded-full search-radar-pulse opacity-90"></div>
-          <div class="absolute w-11 h-11 bg-rsu-orange/35 rounded-full animate-pulse opacity-95"></div>
+          <div class="absolute w-16 h-16 bg-blue-600/25 rounded-full search-radar-pulse opacity-90"></div>
+          <div class="absolute w-11 h-11 bg-blue-600/35 rounded-full animate-pulse opacity-95"></div>
           
           <!-- Elegant bouncing & floating pin -->
-          <div class="relative w-10 h-10 bg-white dark:bg-slate-900 rounded-full shadow-2xl border-2 border-rsu-orange flex items-center justify-center marker-floating-pin z-10">
+          <div class="relative w-10 h-10 bg-white dark:bg-slate-900 rounded-full shadow-2xl border-2 border-blue-600 flex items-center justify-center marker-floating-pin z-10">
             <!-- Inner color containing custom icon path -->
-            <div class="w-8 h-8 rounded-full bg-rsu-orange text-white flex items-center justify-center shadow-inner">
+            <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-inner">
               <svg viewBox="0 0 24 24" class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
               </svg>
@@ -71,9 +71,9 @@ export const createCustomIcon = (type: string, isActive: boolean, isHighlighted:
       className: 'custom-marker search-highlight',
       html: `
         <div class="relative flex items-center justify-center w-12 h-12 marker-inner-highlight">
-          <!-- Pulsating emerald highlight halo -->
-          <div class="absolute w-12 h-12 bg-emerald-500/25 rounded-full search-radar-pulse"></div>
-          <div class="z-10 bg-emerald-600 text-white w-7 h-7 rounded-full shadow-lg border-2 border-white dark:border-slate-800 flex items-center justify-center transition-all duration-300 scale-110">
+          <!-- Pulsating blue highlight halo -->
+          <div class="absolute w-12 h-12 bg-blue-500/25 rounded-full search-radar-pulse"></div>
+          <div class="z-10 bg-blue-600 text-white w-7 h-7 rounded-full shadow-lg border-2 border-white dark:border-slate-800 flex items-center justify-center transition-all duration-300 scale-110">
             <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 fill-current" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
             </svg>
@@ -85,7 +85,7 @@ export const createCustomIcon = (type: string, isActive: boolean, isHighlighted:
     });
   } else {
     const bgColor = 'bg-white dark:bg-slate-900';
-    const dotColor = 'bg-rsu-navy dark:bg-emerald-400';
+    const dotColor = 'bg-slate-900 dark:bg-blue-400';
     
     icon = L.divIcon({
       className: cn('custom-marker default-location-dot pointer-events-auto cursor-pointer opacity-0'),

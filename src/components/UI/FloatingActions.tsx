@@ -103,8 +103,8 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
           className={cn(
             "relative group flex flex-col items-center justify-center px-1.5 py-1 xs:px-2.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 cursor-pointer min-w-[40px] xs:min-w-[44px] min-h-[44px] touch-manipulation",
             isFollowingUser
-              ? "bg-rsu-navy text-white shadow-md ring-2 ring-rsu-navy/20 dark:bg-emerald-600 dark:ring-emerald-500/30"
-              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
+              ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-500/30"
+              : "text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400"
           )}
           title={isFollowingUser ? "Live GPS Tracking Active" : "Center on My Location"}
           aria-label="Locate me"
@@ -134,8 +134,8 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
           className={cn(
             "flex flex-col items-center justify-center px-1.5 py-1 xs:px-2.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 cursor-pointer min-w-[40px] xs:min-w-[44px] min-h-[44px] touch-manipulation",
             isSatelliteView
-              ? "bg-[#4285F4] text-white shadow-md"
-              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
+              ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-500/30"
+              : "text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400"
           )}
           title={isSatelliteView ? "Switch to 2D Map View" : "Switch to Satellite Imagery"}
           aria-label="Toggle map layer"
@@ -153,26 +153,26 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
             className={cn(
               "relative flex flex-col items-center justify-center px-1.5 py-1 xs:px-2.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 cursor-pointer min-w-[40px] xs:min-w-[44px] min-h-[44px] touch-manipulation",
               isMeetupOpen
-                ? "bg-teal-600 text-white shadow-md ring-2 ring-teal-500/20"
+                ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-500/30"
                 : isLiveSharing
-                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-400/60"
-                : "text-slate-600 dark:text-slate-300 hover:bg-teal-50 dark:hover:bg-teal-950/30 hover:text-teal-600 dark:hover:text-teal-400"
+                ? "bg-blue-50 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-400/60"
+                : "text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400"
             )}
             title="Opt-in Campus Meetups & Live Location"
             aria-label="Campus meetups and location sharing"
           >
             {isLiveSharing && (
               <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
               </span>
             )}
             {activeFriendsCount > 0 && !isLiveSharing && (
-              <span className="absolute -top-0.5 -right-0.5 px-1 py-0.2 bg-emerald-600 text-white rounded-full text-[8px] font-mono font-bold">
+              <span className="absolute -top-0.5 -right-0.5 px-1 py-0.2 bg-blue-600 text-white rounded-full text-[8px] font-mono font-bold">
                 {activeFriendsCount}
               </span>
             )}
-            <Radio size={18} className={cn("sm:w-5 sm:h-5", isLiveSharing && "animate-pulse text-emerald-600 dark:text-emerald-400")} />
+            <Radio size={18} className={cn("sm:w-5 sm:h-5", isLiveSharing && "animate-pulse text-blue-600 dark:text-blue-400")} />
             <span className="text-[8px] xs:text-[8.5px] sm:text-[9px] md:text-[10px] font-bold tracking-tight leading-none mt-1 whitespace-nowrap">
               Meetups
             </span>
@@ -188,8 +188,8 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
           className={cn(
             "flex flex-col items-center justify-center px-1.5 py-1 xs:px-2.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 cursor-pointer min-w-[40px] xs:min-w-[44px] min-h-[44px] touch-manipulation",
             isTimetableOpen
-              ? "bg-rsu-orange text-white shadow-md"
-              : "text-slate-600 dark:text-slate-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-rsu-orange"
+              ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-500/30"
+              : "text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400"
           )}
           title="Smart Academic Timetable"
           aria-label="Timetable hub"
@@ -207,8 +207,8 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
             className={cn(
               "flex flex-col items-center justify-center px-1.5 py-1 xs:px-2.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 cursor-pointer min-w-[40px] xs:min-w-[44px] min-h-[44px] touch-manipulation",
               isChatOpen
-                ? "bg-purple-600 text-white shadow-md"
-                : "text-slate-600 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:text-purple-600 dark:hover:text-purple-400"
+                ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-500/30"
+                : "text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400"
             )}
             title="RSU Navi-bot"
             aria-label="RSU Navi-bot AI Guide"
@@ -226,8 +226,8 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
           className={cn(
             "flex flex-col items-center justify-center px-1.5 py-1 xs:px-2.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 cursor-pointer min-w-[40px] xs:min-w-[44px] min-h-[44px] touch-manipulation",
             isProfileOpen
-              ? "bg-emerald-600 text-white shadow-md ring-2 ring-emerald-500/20"
-              : "text-slate-600 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400"
+              ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-500/30"
+              : "text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400"
           )}
           title={currentUser ? `Profile: ${currentUser.displayName || currentUser.email}` : "Campus Profile & Hub"}
           aria-label="Profile and events hub"
@@ -241,15 +241,15 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
                   referrerPolicy="no-referrer"
                   className={cn(
                     "w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-full object-cover border",
-                    isProfileOpen ? "border-white" : "border-emerald-500"
+                    isProfileOpen ? "border-white" : "border-blue-500"
                   )}
                 />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 border border-white dark:border-slate-900 rounded-full" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-blue-500 border border-white dark:border-slate-900 rounded-full" />
               </div>
             ) : (
               <div className={cn(
                 "w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-full font-black text-[8px] sm:text-[9px] flex items-center justify-center border",
-                isProfileOpen ? "bg-white text-emerald-700 border-white" : "bg-emerald-600 text-white border-emerald-500"
+                isProfileOpen ? "bg-white text-blue-700 border-white" : "bg-blue-600 text-white border-blue-500"
               )}>
                 {getInitials(currentUser.displayName, currentUser.email)}
               </div>

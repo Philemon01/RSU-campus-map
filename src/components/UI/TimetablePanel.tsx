@@ -193,7 +193,7 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
         console.error("Mount fetchTimetables error:", err);
       });
     }
-  }, [currentUser]);
+  }, [currentUser?.uid]);
 
   useEffect(() => {
     const checkSync = async () => {
@@ -221,7 +221,7 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
       }
     };
     checkSync().catch(err => console.error("checkSync failed:", err));
-  }, [selectedTimetable, currentUser]);
+  }, [selectedTimetable?.id, currentUser?.uid]);
 
   const filteredTimetables = timetables.filter(t => {
     const matchesSearch = searchQuery.trim() === "" || 
@@ -926,13 +926,13 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
                 disabled={syncStatus !== 'idle'}
                 className={cn(
                   "w-full mt-6 py-4 px-6 rounded-2xl font-black tracking-wider text-xs flex items-center justify-center gap-3 border-2 transition-all duration-300 relative overflow-hidden group hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-md active:scale-[0.99]",
-                  syncStatus === 'syncing' && "bg-indigo-600 border-indigo-600/50 text-white cursor-not-allowed animate-pulse shadow-md shadow-indigo-600/10",
-                  syncStatus === 'success' && "bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/20",
-                  syncStatus === 'error' && "bg-amber-600 border-amber-600 text-white shadow-lg shadow-amber-600/20",
+                  syncStatus === 'syncing' && "bg-blue-600 border-blue-600 text-white cursor-not-allowed animate-pulse shadow-md",
+                  syncStatus === 'success' && "bg-green-600 border-green-600 text-white shadow-lg",
+                  syncStatus === 'error' && "bg-red-600 border-red-600 text-white shadow-lg",
                   syncStatus === 'idle' && (
                     currentSync 
-                      ? "bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100/80 hover:border-rose-300 shadow-sm shadow-rose-100/30" 
-                      : "bg-rsu-navy border-rsu-navy text-white hover:bg-rsu-navy/95 hover:border-rsu-orange/45 shadow-md shadow-rsu-navy/20 hover:shadow-lg hover:shadow-rsu-navy/30"
+                      ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100/80 hover:border-red-300 shadow-sm" 
+                      : "bg-blue-600 border-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg"
                   )
                 )}
               >
@@ -957,12 +957,12 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
                 {syncStatus === 'idle' && (
                   currentSync ? (
                     <>
-                      <Trash2 className="w-4 h-4 group-hover:-rotate-6 transition-transform text-rose-600" />
+                      <Trash2 className="w-4 h-4 group-hover:-rotate-6 transition-transform text-red-600" />
                       <span>Remove from Google Calendar</span>
                     </>
                   ) : (
                     <>
-                      <Calendar className="w-4 h-4 group-hover:scale-110 transition-transform text-rsu-orange" />
+                      <Calendar className="w-4 h-4 group-hover:scale-110 transition-transform text-white" />
                       <span>Sync to Google Calendar</span>
                     </>
                   )

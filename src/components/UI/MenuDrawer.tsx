@@ -240,7 +240,7 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({
                       toggleTimetable();
                       setIsMenuOpen(false);
                     }}
-                    className="w-full flex items-center p-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-2xl shadow-sm hover:shadow-md transition-all active:scale-98 group text-left cursor-pointer"
+                    className="w-full flex items-center p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-sm hover:shadow-md transition-all active:scale-98 group text-left cursor-pointer"
                   >
                     <div className="p-2.5 bg-white/20 rounded-xl mr-3 shadow-inner shrink-0 group-hover:scale-105 transition-transform">
                       <BookOpen size={20} />
@@ -262,9 +262,9 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({
                       toggleEvents();
                       setIsMenuOpen(false);
                     }}
-                    className="w-full flex items-center p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl shadow-sm hover:shadow-md transition-all active:scale-98 group text-left cursor-pointer"
+                    className="w-full flex items-center p-3 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-2xl shadow-sm hover:shadow-md transition-all active:scale-98 group text-left cursor-pointer border border-slate-700/50"
                   >
-                    <div className="p-2.5 bg-white/20 rounded-xl mr-3 shadow-inner shrink-0 group-hover:scale-105 transition-transform">
+                    <div className="p-2.5 bg-blue-600 text-white rounded-xl mr-3 shadow-inner shrink-0 group-hover:scale-105 transition-transform">
                       <Calendar size={20} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -273,12 +273,12 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({
                           Campus Events
                         </span>
                         {eventsCount > 0 && (
-                          <span className="px-1.5 py-0.2 bg-white text-blue-700 rounded-full text-[9px] font-bold">
+                          <span className="px-1.5 py-0.2 bg-blue-600 text-white rounded-full text-[9px] font-bold">
                             {eventsCount}
                           </span>
                         )}
                       </div>
-                      <div className="text-[10px] font-medium text-white/85 leading-tight mt-0.5">
+                      <div className="text-[10px] font-medium text-slate-300 leading-tight mt-0.5">
                         Discover happenings, RSVPs & campus activities
                       </div>
                     </div>
@@ -292,12 +292,12 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({
                         toggleMeetup();
                         setIsMenuOpen(false);
                       }}
-                      className="w-full flex items-center p-3 bg-gradient-to-r from-teal-600 to-emerald-600 text-white rounded-2xl shadow-sm hover:shadow-md transition-all active:scale-98 group text-left cursor-pointer"
+                      className="w-full flex items-center p-3 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-2xl shadow-sm hover:shadow-md transition-all active:scale-98 group text-left cursor-pointer border border-slate-700/50"
                     >
-                      <div className="relative p-2.5 bg-white/20 rounded-xl mr-3 shadow-inner shrink-0 group-hover:scale-105 transition-transform">
-                        <Radio size={20} className={cn(isLiveSharing && "animate-pulse")} />
+                      <div className="relative p-2.5 bg-blue-600 text-white rounded-xl mr-3 shadow-inner shrink-0 group-hover:scale-105 transition-transform">
+                        <Radio size={20} className={cn(isLiveSharing && "animate-pulse text-green-300")} />
                         {isLiveSharing && (
-                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-300 rounded-full animate-ping" />
+                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-400 rounded-full animate-ping" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -306,17 +306,17 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({
                             Campus Meetups
                           </span>
                           {isLiveSharing && (
-                            <span className="px-1.5 py-0.2 bg-white text-emerald-700 rounded-full text-[8px] font-extrabold uppercase animate-pulse">
+                            <span className="px-1.5 py-0.2 bg-green-600 text-white rounded-full text-[8px] font-extrabold uppercase animate-pulse">
                               LIVE
                             </span>
                           )}
                           {activeFriendsCount > 0 && !isLiveSharing && (
-                            <span className="px-1.5 py-0.2 bg-white text-teal-700 rounded-full text-[9px] font-bold">
+                            <span className="px-1.5 py-0.2 bg-blue-600 text-white rounded-full text-[9px] font-bold">
                               {activeFriendsCount} Friends
                             </span>
                           )}
                         </div>
-                        <div className="text-[10px] font-medium text-white/85 leading-tight mt-0.5">
+                        <div className="text-[10px] font-medium text-slate-300 leading-tight mt-0.5">
                           Opt-in real-time friend beacon & meetups
                         </div>
                       </div>
@@ -331,7 +331,7 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({
                         onToggleChat();
                         setIsMenuOpen(false);
                       }}
-                      className="w-full flex items-center p-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl shadow-sm hover:shadow-md transition-all active:scale-98 group text-left cursor-pointer"
+                      className="w-full flex items-center p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-sm hover:shadow-md transition-all active:scale-98 group text-left cursor-pointer"
                     >
                       <div className="p-2.5 bg-white/20 rounded-xl mr-3 shadow-inner shrink-0 group-hover:scale-105 transition-transform">
                         <Sparkles size={20} />
@@ -357,7 +357,7 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({
                       }}
                       className="w-full flex items-center p-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 rounded-2xl transition-all active:scale-98 group text-left cursor-pointer text-slate-800 dark:text-white"
                     >
-                      <div className="p-2.5 bg-emerald-600 text-white rounded-xl mr-3 shadow-sm shrink-0 group-hover:scale-105 transition-transform">
+                      <div className="p-2.5 bg-slate-900 text-white dark:bg-slate-700 rounded-xl mr-3 shadow-sm shrink-0 group-hover:scale-105 transition-transform">
                         <UserIcon size={20} />
                       </div>
                       <div className="flex-1 min-w-0">
