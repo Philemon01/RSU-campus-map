@@ -1,22 +1,20 @@
 import React from 'react';
-import { Menu, GraduationCap, Volume2, Sun, Moon, Home } from 'lucide-react';
+import { Menu, GraduationCap, Volume2, Home } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 interface HeaderProps {
   isVoiceAssistEnabled: boolean;
-  isDarkMode: boolean;
+  isDarkMode?: boolean;
   setIsMenuOpen: (o: boolean) => void;
   setIsVoiceAssistEnabled: (e: boolean) => void;
-  setIsDarkMode: (d: boolean) => void;
+  setIsDarkMode?: (d: boolean) => void;
   onNavigateHome?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   isVoiceAssistEnabled,
-  isDarkMode,
   setIsMenuOpen,
   setIsVoiceAssistEnabled,
-  setIsDarkMode,
   onNavigateHome
 }) => {
   return (
@@ -36,8 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
           <div className="flex flex-col justify-center min-w-0">
             <h1 
-              style={{ color: isDarkMode ? '#FFFFFF' : '#0F172A' }}
-              className="text-xs sm:text-sm font-display font-bold tracking-tight leading-none truncate"
+              className="text-xs sm:text-sm font-display font-bold tracking-tight leading-none truncate text-slate-900"
             >
               <span className="hidden sm:inline">Rivers State University</span>
               <span className="inline sm:hidden">RSU</span>
@@ -63,7 +60,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         <div className="text-right hidden lg:flex flex-col items-end">
-          <p className="text-[10px] font-mono font-black text-rsu-navy dark:text-rsu-green uppercase tracking-widest leading-none">
+          <p className="text-[10px] font-mono font-black text-rsu-navy uppercase tracking-widest leading-none">
             Philemon Progress
           </p>
           <p className="text-[8px] font-bold text-rsu-muted uppercase mt-0.5">System Architect</p>
@@ -79,18 +76,6 @@ export const Header: React.FC<HeaderProps> = ({
           title={isVoiceAssistEnabled ? "Voice Assist On" : "Voice Assist Off"}
         >
           {isVoiceAssistEnabled ? <Volume2 size={17} /> : <Volume2 size={17} className="opacity-30" />}
-        </button>
-        <button
-          onClick={() => setIsDarkMode(!isDarkMode)}
-          className={cn(
-            "p-2 sm:p-2.5 bg-rsu-bg rounded-xl transition-all flex items-center justify-center shadow-inner border cursor-pointer shrink-0",
-            isDarkMode 
-              ? "text-white border-white/20 hover:bg-white/10" 
-              : "text-rsu-navy border-rsu-navy/10 hover:bg-rsu-navy/10"
-          )}
-          aria-label="Toggle dark mode"
-        >
-          {isDarkMode ? <Sun size={17} /> : <Moon size={17} />}
         </button>
       </div>
     </header>

@@ -137,25 +137,12 @@ export default function App() {
   const [highlightedLocationId, setHighlightedLocationId] = useState<string | null>(null);
   const [unauthorizedDomain, setUnauthorizedDomain] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: 'error' | 'info' | 'success' } | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') === 'dark' || 
-        (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    }
-    return false;
-  });
-
-  // Sync dark class on documentElement for Tailwind's dark: variant
+  // Permanent light mode: ensure dark class is removed and localStorage is set to light
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDarkMode]);
+    document.documentElement.classList.remove('dark');
+    localStorage.setItem('theme', 'light');
+  }, []);
   const [savedLocationIds, setSavedLocationIds] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('saved_locations');
@@ -1466,8 +1453,7 @@ export default function App() {
   if (currentPath === '/') {
     return (
       <LandingPage 
-        isDarkMode={isDarkMode}
-        setIsDarkMode={setIsDarkMode}
+        isDarkMode={false}
         onOpenTerms={() => { window.location.href = '/terms.html'; }}
         onOpenPrivacy={() => { window.location.href = '/privacy.html'; }}
         onNavigateToMap={(initialLocation, openTimetable, openEvents) => {
@@ -1672,10 +1658,8 @@ export default function App() {
 
       <Header 
         isVoiceAssistEnabled={isVoiceAssistEnabled}
-        isDarkMode={isDarkMode}
         setIsMenuOpen={setIsMenuOpen}
         setIsVoiceAssistEnabled={setIsVoiceAssistEnabled}
-        setIsDarkMode={setIsDarkMode}
         onNavigateHome={() => navigate('/')}
       />
 

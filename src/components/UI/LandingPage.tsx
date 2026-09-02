@@ -10,8 +10,6 @@ import {
   Clock, 
   ChevronRight, 
   ChevronDown,
-  Moon, 
-  Sun, 
   MapPin, 
   BookOpen, 
   ArrowRight,
@@ -55,8 +53,8 @@ import { Location, LocationType } from '../../types';
 import { cn } from '../../lib/utils';
 
 interface LandingPageProps {
-  isDarkMode: boolean;
-  setIsDarkMode: (val: boolean) => void;
+  isDarkMode?: boolean;
+  setIsDarkMode?: (val: boolean) => void;
   onNavigateToMap: (initialLocation?: Location | null, openTimetable?: boolean, openEvents?: boolean, openMeetup?: boolean) => void;
   onOpenTerms?: () => void;
   onOpenPrivacy?: () => void;
@@ -125,8 +123,7 @@ const SIM_ROUTE: SimStep[] = [
 ];
 
 export function LandingPage({ 
-  isDarkMode, 
-  setIsDarkMode, 
+  isDarkMode = false, 
   onNavigateToMap,
   onOpenTerms,
   onOpenPrivacy
@@ -400,29 +397,10 @@ export function LandingPage({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0" id="landing-nav-actions">
-          <button
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            className={cn(
-              "p-2.5 rounded-full border transition-all cursor-pointer shadow-sm flex items-center justify-center",
-              isDarkMode 
-                ? "bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-850" 
-                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
-            )}
-            title="Toggle Light/Dark Theme"
-            id="nav-theme-toggle"
-          >
-            {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
-          </button>
-
           {/* Primary Action Button */}
           <button
             onClick={() => onNavigateToMap()}
-            className={cn(
-              "hidden sm:flex px-4 lg:px-5 py-2 rounded-full text-xs font-bold tracking-wide transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer shadow-md border items-center gap-2",
-              isDarkMode 
-                ? "bg-white border-white text-slate-950 shadow-white/10 hover:bg-slate-100" 
-                : "bg-slate-950 border-slate-950 text-white shadow-slate-950/20 hover:bg-slate-900"
-            )}
+            className="hidden sm:flex px-4 lg:px-5 py-2 rounded-full text-xs font-bold tracking-wide transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer shadow-md border items-center gap-2 bg-slate-950 border-slate-950 text-white shadow-slate-950/20 hover:bg-slate-900"
             id="nav-launch-map-btn"
           >
             <Navigation size={13} className="transform rotate-45 text-blue-500" />
@@ -432,12 +410,7 @@ export function LandingPage({
           {/* Mobile Menu Toggle Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className={cn(
-              "md:hidden p-2.5 rounded-full border transition-all cursor-pointer shadow-sm flex items-center justify-center",
-              isDarkMode 
-                ? "bg-slate-900 border-slate-800 text-slate-100 hover:bg-slate-800" 
-                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-100"
-            )}
+            className="md:hidden p-2.5 rounded-full border transition-all cursor-pointer shadow-sm flex items-center justify-center bg-white border-slate-200 text-slate-700 hover:bg-slate-100"
             aria-label="Toggle mobile menu"
             id="nav-mobile-toggle"
           >
