@@ -15,6 +15,7 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'progressphilemon@gmail.com' ||
+        request.auth.token.email == 'admin@rsu.edu.ng' ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
@@ -76,7 +77,7 @@ service cloud.firestore {
       }
 
       // Read rules: Any user can read timetables (for published timetables or signed-in users)
-      allow get, list: if true;
+      allow read: if true;
 
       // Write rules: Only authenticated owner can perform mutate operations (either standard app model or blueprint)
       allow create: if isSignedIn() && (
@@ -85,25 +86,32 @@ service cloud.firestore {
       );
 
       allow update: if isSignedIn() && (
+        isAdmin() ||
         (isOwner(existing().creatorId) && isOwner(incoming().creatorId) && isValidAppTimetable(incoming())) ||
         (get(/databases/$(database)/documents/timetables/$(timetableId)).data.keys().hasAny(['ownerId']) && isOwner(existing().ownerId) && isOwner(incoming().ownerId) && isValidBlueprintTimetable(incoming()) && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time)
       );
 
       allow delete: if isSignedIn() && (
+        isAdmin() ||
         (existing().keys().hasAny(['creatorId']) && isOwner(existing().creatorId)) ||
-        (existing().keys().hasAny(['ownerId']) && isOwner(existing().ownerId))
+        (existing().keys().hasAny(['ownerId']) && isOwner(existing().ownerId)) ||
+        (existing().keys().hasAny(['creatorEmail']) && request.auth.token.email != null && existing().creatorEmail == request.auth.token.email)
       );
 
       // Support slots sub-collection for legacy relational sync components (Optional fallback)
       match /slots/{slotId} {
         allow read: if true;
         allow create, update: if isSignedIn() && (
+          isAdmin() ||
           (get(/databases/$(database)/documents/timetables/$(timetableId)).data.keys().hasAny(['ownerId']) && get(/databases/$(database)/documents/timetables/$(timetableId)).data.ownerId == request.auth.uid) ||
-          (get(/databases/$(database)/documents/timetables/$(timetableId)).data.keys().hasAny(['creatorId']) && get(/databases/$(database)/documents/timetables/$(timetableId)).data.creatorId == request.auth.uid)
+          (get(/databases/$(database)/documents/timetables/$(timetableId)).data.keys().hasAny(['creatorId']) && get(/databases/$(database)/documents/timetables/$(timetableId)).data.creatorId == request.auth.uid) ||
+          (get(/databases/$(database)/documents/timetables/$(timetableId)).data.keys().hasAny(['creatorEmail']) && request.auth.token.email != null && get(/databases/$(database)/documents/timetables/$(timetableId)).data.creatorEmail == request.auth.token.email)
         );
         allow delete: if isSignedIn() && (
+          isAdmin() ||
           (get(/databases/$(database)/documents/timetables/$(timetableId)).data.keys().hasAny(['ownerId']) && get(/databases/$(database)/documents/timetables/$(timetableId)).data.ownerId == request.auth.uid) ||
-          (get(/databases/$(database)/documents/timetables/$(timetableId)).data.keys().hasAny(['creatorId']) && get(/databases/$(database)/documents/timetables/$(timetableId)).data.creatorId == request.auth.uid)
+          (get(/databases/$(database)/documents/timetables/$(timetableId)).data.keys().hasAny(['creatorId']) && get(/databases/$(database)/documents/timetables/$(timetableId)).data.creatorId == request.auth.uid) ||
+          (get(/databases/$(database)/documents/timetables/$(timetableId)).data.keys().hasAny(['creatorEmail']) && request.auth.token.email != null && get(/databases/$(database)/documents/timetables/$(timetableId)).data.creatorEmail == request.auth.token.email)
         );
       }
     }

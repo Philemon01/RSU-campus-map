@@ -20,16 +20,16 @@
   --rsu-orange: #2563EB;
 }
 
-/* Dark Mode Overrides */
+/* Permanent Light Mode Overrides (Guarantees light mode tokens throughout) */
 .dark {
-  --rsu-bg: #0B1120;
-  --rsu-text: #F8FAFC;
-  --rsu-card: #1E293B;
-  --rsu-border: #334155;
-  --rsu-muted: #94A3B8;
-  --rsu-blue: #3B82F6;
-  --rsu-green: #22C55E;
-  --rsu-red: #EF4444;
+  --rsu-bg: #F8FAFC;
+  --rsu-text: #0F172A;
+  --rsu-card: #FFFFFF;
+  --rsu-border: #E2E8F0;
+  --rsu-muted: #64748B;
+  --rsu-blue: #2563EB;
+  --rsu-green: #16A34A;
+  --rsu-red: #DC2626;
 }
 
 @theme {
@@ -69,9 +69,9 @@ html, body, #root {
   z-index: 0;
 }
 
-/* Dark mode map tiles - Only invert standard view, not satellite photos */
+/* Map tiles styling - keep natural light view */
 .dark .leaflet-container:not(.satellite-active) .leaflet-tile-pane {
-  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+  filter: none;
 }
 
 .leaflet-container.satellite-active .leaflet-tile-pane {

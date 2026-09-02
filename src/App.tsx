@@ -606,7 +606,7 @@ export default function App() {
   const savedFriendCodesKey = savedFriendCodes.join(',');
   useEffect(() => {
     if (savedFriendCodes.length === 0) {
-      setFriendSessions({});
+      setFriendSessions(prev => Object.keys(prev).length === 0 ? prev : {});
       return;
     }
 
@@ -709,8 +709,8 @@ export default function App() {
         setPlannedRoutes(prev => prev.length === 0 ? prev : []);
         lastRouteCoordsRef.current = null;
         if (!isNavigating) {
-          setNavigationPath(null);
-          setManeuvers([]);
+          setNavigationPath(prev => prev === null ? prev : null);
+          setManeuvers(prev => prev.length === 0 ? prev : []);
         }
       }
     };
@@ -736,7 +736,10 @@ export default function App() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  // Handle navigation logic and camera follow
+  // Track last GPS position used for maneuver advancement to prevent rapid-fire cascades
+  const lastManeuverAdvanceLocationRef = useRef<[number, number] | null>(null);
+
+  // Handle navigation camera follow
   useEffect(() => {
     if (!userLocation) return;
     
@@ -748,15 +751,43 @@ export default function App() {
         return { ...prev, center: userLocation, zoom: isNavigating ? 18 : prev.zoom };
       });
     }
+  }, [userLocation?.[0], userLocation?.[1], isFollowingUser, isNavigating, startLocation?.id]);
 
-    if (isNavigating && currentManeuverIndex >= 0 && maneuvers[currentManeuverIndex]) {
-      const maneuverCoords = maneuvers[currentManeuverIndex].coordinates;
-      const dist = getDistanceInMeters(userLocation, maneuverCoords);
+  // Handle maneuver progression when physically reaching waypoints
+  useEffect(() => {
+    if (!isNavigating || !userLocation || maneuvers.length === 0 || currentManeuverIndex < 0) {
+      lastManeuverAdvanceLocationRef.current = null;
+      return;
+    }
+
+    // Step 0 represents initial orientation; only advance when moving towards step 1
+    if (currentManeuverIndex === 0) {
+      if (maneuvers.length > 1) {
+        const nextCoords = maneuvers[1].coordinates;
+        const distToNext = getDistanceInMeters(userLocation, nextCoords);
+        if (distToNext < 15) {
+          lastManeuverAdvanceLocationRef.current = userLocation;
+          nextManeuver();
+        }
+      }
+      return;
+    }
+
+    // For subsequent steps: user must have moved from the previous advance location
+    if (lastManeuverAdvanceLocationRef.current) {
+      const distFromLast = getDistanceInMeters(userLocation, lastManeuverAdvanceLocationRef.current);
+      if (distFromLast < 8) return; // Prevent re-triggering while in the same vicinity
+    }
+
+    const currentManeuver = maneuvers[currentManeuverIndex];
+    if (currentManeuver) {
+      const dist = getDistanceInMeters(userLocation, currentManeuver.coordinates);
       if (dist < 15) {
+        lastManeuverAdvanceLocationRef.current = userLocation;
         nextManeuver();
       }
     }
-  }, [userLocation?.[0], userLocation?.[1], isFollowingUser, isNavigating, currentManeuverIndex, maneuvers.length, startLocation?.id]);
+  }, [userLocation?.[0], userLocation?.[1], isNavigating, currentManeuverIndex, maneuvers.length]);
 
   const handleLocateMe = () => {
     if (userLocation) {

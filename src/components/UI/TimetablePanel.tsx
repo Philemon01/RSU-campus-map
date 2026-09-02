@@ -21,6 +21,7 @@ import { collection, query, where, getDocs, addDoc, doc, updateDoc, deleteDoc, o
 import { signInWithPopup, signInAnonymously, GoogleAuthProvider, User } from 'firebase/auth';
 import { db, auth, googleProvider, getCachedAccessToken, setCachedAccessToken } from '../../lib/firebase';
 import { locations } from '../../data/locations';
+import { isUserAdmin } from '../../data/events';
 import { cn } from '../../lib/utils';
 import { parseTimetableOnClient } from '../../services/client/geminiParser';
 
@@ -117,6 +118,9 @@ interface Timetable {
   semester: string;
   status: 'published' | 'draft';
   creatorId: string;
+  ownerId?: string;
+  creatorEmail?: string;
+  createdAt?: string;
 }
 
 interface TimetablePanelProps {
@@ -151,7 +155,12 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
-  const [confirmDialog, setConfirmDialog] = useState<{ message: string; action: () => void } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{ 
+    message: string; 
+    action: () => void;
+    confirmText?: string;
+    isDestructive?: boolean;
+  } | null>(null);
 
   const showToast = (type: 'success' | 'error' | 'info', message: string) => {
     setToast({ type, message });
@@ -160,8 +169,19 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
     }, 6000);
   };
 
-  const showConfirm = (message: string, action: () => void) => {
-    setConfirmDialog({ message, action });
+  const showConfirm = (message: string, action: () => void, confirmText = 'Confirm', isDestructive = false) => {
+    setConfirmDialog({ message, action, confirmText, isDestructive });
+  };
+
+  const canDeleteTimetable = (t: Timetable | null): boolean => {
+    if (!t || !currentUser) return false;
+    if (isUserAdmin(currentUser)) return true;
+    const isCreator = Boolean(
+      (t.creatorId && t.creatorId === currentUser.uid) ||
+      (t.ownerId && t.ownerId === currentUser.uid) ||
+      (t.creatorEmail && currentUser.email && t.creatorEmail.toLowerCase() === currentUser.email.toLowerCase())
+    );
+    return isCreator;
   };
 
   // Search and Filter states for Browse View
@@ -188,11 +208,9 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
   });
 
   useEffect(() => {
-    if (currentUser) {
-      fetchTimetables().catch(err => {
-        console.error("Mount fetchTimetables error:", err);
-      });
-    }
+    fetchTimetables().catch(err => {
+      console.error("Mount fetchTimetables error:", err);
+    });
   }, [currentUser?.uid]);
 
   useEffect(() => {
@@ -277,11 +295,14 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
         const data = docSnap.data();
         const creatorId = data.creatorId || data.ownerId || "";
         const ownerId = data.ownerId || data.creatorId || "";
+        const creatorEmail = data.creatorEmail || data.ownerEmail || "";
         return { 
           id: docSnap.id, 
           ...data,
           creatorId,
-          ownerId
+          ownerId,
+          creatorEmail,
+          createdAt: data.createdAt || ""
         } as any as Timetable;
       });
       
@@ -568,19 +589,88 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
   };
 
   const handleDeleteTimetable = async (t: Timetable) => {
-    showConfirm("Permanently delete this timetable?", async () => {
+    if (!currentUser) {
+      setIsSigningIn(true);
+      try {
+        const result = await signInWithPopup(auth, googleProvider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential?.accessToken) {
+          setCachedAccessToken(credential.accessToken);
+        }
+        showToast("info", "Signed in as " + (result.user.email || 'user') + ". Please click delete again.");
+      } catch (err: any) {
+        if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+          showToast("error", "Sign in failed: " + (err.message || err));
+        }
+      } finally {
+        setIsSigningIn(false);
+      }
+      return;
+    }
+
+    if (!canDeleteTimetable(t)) {
+      showToast("error", "Permission restricted: Only the creator of this timetable or an administrator can delete it.");
+      return;
+    }
+
+    const isAdmin = isUserAdmin(currentUser);
+    const isSelf = Boolean(
+      currentUser && (
+        t.creatorId === currentUser.uid ||
+        t.ownerId === currentUser.uid ||
+        (t.creatorEmail && currentUser.email && t.creatorEmail.toLowerCase() === currentUser.email.toLowerCase())
+      )
+    );
+
+    const titleStr = t.department ? `${t.department} (${t.level})` : `${t.faculty} (${t.level})`;
+    const confirmMessage = isAdmin && !isSelf
+      ? `As campus administrator, permanently delete the "${titleStr}" timetable created by ${t.creatorEmail || 'another user'} and all its lecture slots?`
+      : `Permanently delete your "${titleStr}" timetable and all its scheduled lecture slots? This action cannot be undone.`;
+
+    showConfirm(confirmMessage, async () => {
       const path = `timetables/${t.id}`;
       try {
         setIsLoading(true);
+
+        // 1. Delete all slot documents in the subcollection
+        try {
+          const slotsSnapshot = await getDocs(collection(db, 'timetables', t.id, 'slots'));
+          const deleteSlotPromises = slotsSnapshot.docs.map(slotDoc => deleteDoc(slotDoc.ref));
+          await Promise.all(deleteSlotPromises);
+        } catch (slotErr) {
+          console.warn("Could not delete child slot documents:", slotErr);
+        }
+
+        // 2. Delete the parent timetable document
         await deleteDoc(doc(db, 'timetables', t.id));
-        showToast("success", "Timetable deleted successfully.");
-        fetchTimetables().catch(err => console.error(err));
+
+        // 3. If this timetable was synced by the user, remove sync record
+        if (currentSync && selectedTimetable?.id === t.id) {
+          try {
+            await deleteDoc(doc(db, 'user_syncs', currentSync.id));
+          } catch (syncErr) {
+            console.warn("Could not remove sync record:", syncErr);
+          }
+          setCurrentSync(null);
+        }
+
+        showToast("success", `Timetable "${titleStr}" deleted successfully.`);
+
+        // 4. If currently viewing this timetable in review, return to browse
+        if (selectedTimetable?.id === t.id) {
+          setSelectedTimetable(null);
+          setSlots([]);
+          setView('browse');
+        }
+
+        await fetchTimetables();
       } catch (err: any) {
         handleFirestoreError(err, OperationType.DELETE, path);
+        showToast("error", "Failed to delete timetable: " + (err.message || err));
       } finally {
         setIsLoading(false);
       }
-    });
+    }, isAdmin && !isSelf ? 'Delete (Admin Privileges)' : 'Delete Timetable', true);
   };
 
   return (
@@ -699,6 +789,43 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
           <>
             {view === 'browse' && (
               <div className="p-4 space-y-4">
+                {/* User Access & Deletion Permissions Status Bar */}
+                {!currentUser ? (
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-bold text-amber-900 text-xs leading-tight">Browsing as Guest</p>
+                      <p className="text-[10px] text-amber-700 font-medium">Sign in with Google to create or delete schedules.</p>
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={handleStartCreation}
+                      className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-[10px] uppercase tracking-wider shrink-0 cursor-pointer shadow-xs active:scale-95 transition-all"
+                    >
+                      Sign In
+                    </button>
+                  </div>
+                ) : isUserAdmin(currentUser) ? (
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-3 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2.5 h-2.5 rounded-full bg-blue-600 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-black text-blue-900 text-xs uppercase tracking-wider leading-none mb-0.5">Admin Access Active</p>
+                        <p className="text-[10px] text-blue-700 font-medium truncate">{currentUser.email} • You can delete any timetable</p>
+                      </div>
+                    </div>
+                    <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-blue-600 text-white shrink-0">
+                      Full Admin
+                    </span>
+                  </div>
+                ) : (
+                  <div className="bg-slate-100 border border-slate-200 rounded-2xl p-2.5 flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-bold text-slate-800 text-[11px] truncate leading-tight">Signed in: {currentUser.email}</p>
+                      <p className="text-[9px] text-slate-500">You can delete any timetable you created.</p>
+                    </div>
+                  </div>
+                )}
+
                 <button 
                   onClick={handleStartCreation}
                   className="w-full bg-rsu-orange text-white rounded-2xl p-6 flex items-center justify-between shadow-lg active:scale-95 transition-all group"
@@ -775,23 +902,74 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
                   {isLoading ? (
                     <div className="flex justify-center py-10"><div className="w-8 h-8 border-4 border-rsu-orange border-t-transparent rounded-full animate-spin" /></div>
                   ) : filteredTimetables.length > 0 ? (
-                    filteredTimetables.map(t => (
-                      <div key={t.id} className="relative group">
-                        <button 
-                          onClick={() => { setSelectedTimetable(t); fetchSlots(t.id); setView('review'); }}
-                          className="w-full text-left bg-rsu-card rounded-2xl p-4 mb-3 border border-rsu-border/5 shadow-sm hover:shadow-md transition-all flex items-center justify-between"
-                        >
-                          <div>
-                            <h4 className="font-black text-rsu-text text-sm uppercase">{t.faculty}</h4>
-                            <p className="text-[11px] text-rsu-muted font-bold">{t.department} • {t.level}</p>
+                    filteredTimetables.map(t => {
+                      const isCreator = Boolean(
+                        currentUser && (
+                          currentUser.uid === t.creatorId || 
+                          (t.ownerId && currentUser.uid === t.ownerId) || 
+                          (t.creatorEmail && currentUser.email && t.creatorEmail.toLowerCase() === currentUser.email.toLowerCase())
+                        )
+                      );
+                      const isAdmin = isUserAdmin(currentUser);
+                      const canDelete = Boolean(isAdmin || isCreator);
+
+                      return (
+                        <div key={t.id} className="relative bg-rsu-card rounded-2xl mb-3 border border-rsu-border/20 shadow-xs hover:shadow-md transition-all flex items-center justify-between overflow-hidden">
+                          <button 
+                            type="button"
+                            onClick={() => { setSelectedTimetable(t); fetchSlots(t.id); setView('review'); }}
+                            className="flex-1 text-left p-4 pr-2 flex items-center justify-between cursor-pointer"
+                          >
+                            <div className="min-w-0 pr-2">
+                              <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                                <h4 className="font-black text-rsu-text text-sm uppercase truncate">{t.faculty}</h4>
+                                {isCreator && (
+                                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-700 border border-amber-500/20 shrink-0">
+                                    You created
+                                  </span>
+                                )}
+                                {isAdmin && !isCreator && (
+                                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-700 border border-blue-500/20 shrink-0">
+                                    Admin
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-rsu-muted font-bold truncate">{t.department} • {t.level}</p>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-rsu-orange shrink-0 mr-1" />
+                          </button>
+                          <div className="pr-3 pl-1 shrink-0 flex items-center">
+                            {canDelete ? (
+                              <button 
+                                type="button"
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  handleDeleteTimetable(t); 
+                                }} 
+                                className="p-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-all cursor-pointer flex items-center justify-center border border-red-200/80 active:scale-95 shadow-xs"
+                                title={isAdmin && !isCreator ? "Delete Timetable (Admin Privileges)" : "Delete Your Timetable"}
+                                aria-label="Delete timetable"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-600" />
+                              </button>
+                            ) : !currentUser ? (
+                              <button 
+                                type="button"
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  handleDeleteTimetable(t); 
+                                }} 
+                                className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-red-600 rounded-xl transition-all cursor-pointer flex items-center justify-center border border-slate-200 active:scale-95 shadow-xs"
+                                title="Sign in with Google to delete this timetable"
+                                aria-label="Sign in to delete timetable"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            ) : null}
                           </div>
-                          <ChevronRight className="w-5 h-5 text-rsu-orange" />
-                        </button>
-                        {currentUser?.uid === t.creatorId && (
-                          <button onClick={(e) => { e.stopPropagation(); handleDeleteTimetable(t); }} className="absolute right-12 top-1/2 -translate-y-1/2 p-2 bg-red-50 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-4 h-4" /></button>
-                        )}
-                      </div>
-                    ))
+                        </div>
+                      );
+                    })
                   ) : (
                     <div className="text-center py-10 opacity-30 bg-rsu-card rounded-2xl border border-dashed border-rsu-border p-6">
                       <FileText className="w-10 h-10 mx-auto mb-2 text-rsu-muted" />
@@ -906,21 +1084,77 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
         {view === 'review' && (
           <div className="flex flex-col h-full bg-rsu-bg">
             <div className="p-6 bg-rsu-card border-b border-rsu-border shadow-sm">
-              <button 
-                onClick={() => {
-                  if (selectedTimetable) {
-                    setSelectedTimetable(null);
-                    setView('browse');
-                  } else {
-                    setView(slots.length > 0 ? 'manual' : 'entry_mode');
-                  }
-                }} 
-                className="text-xs font-black text-rsu-orange mb-4 hover:underline cursor-pointer"
-              >
-                ← Back
-              </button>
-              <h3 className="text-xl font-black italic text-rsu-text uppercase">{metadata.department || selectedTimetable?.department}</h3>
-              <p className="text-[10px] font-bold text-rsu-muted uppercase">{metadata.level || selectedTimetable?.level}</p>
+              <div className="flex items-center justify-between mb-4">
+                <button 
+                  onClick={() => {
+                    if (selectedTimetable) {
+                      setSelectedTimetable(null);
+                      setView('browse');
+                    } else {
+                      setView(slots.length > 0 ? 'manual' : 'entry_mode');
+                    }
+                  }} 
+                  className="text-xs font-black text-rsu-orange hover:underline cursor-pointer flex items-center gap-1"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" /> Back
+                </button>
+
+                {selectedTimetable && (
+                  canDeleteTimetable(selectedTimetable) ? (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteTimetable(selectedTimetable)}
+                      disabled={isLoading}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+                      title={isUserAdmin(currentUser) && selectedTimetable.creatorId !== currentUser?.uid ? "Delete Timetable (Admin Privileges)" : "Delete Timetable"}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                      <span>
+                        {isUserAdmin(currentUser) && selectedTimetable.creatorId !== currentUser?.uid 
+                          ? "Delete (Admin)" 
+                          : "Delete Timetable"}
+                      </span>
+                    </button>
+                  ) : !currentUser ? (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteTimetable(selectedTimetable)}
+                      disabled={isLoading}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+                      title="Sign in with Google to delete"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Sign In to Delete</span>
+                    </button>
+                  ) : null
+                )}
+              </div>
+
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-xl font-black italic text-rsu-text uppercase">{metadata.department || selectedTimetable?.department}</h3>
+                  <p className="text-[10px] font-bold text-rsu-muted uppercase">{metadata.level || selectedTimetable?.level}</p>
+                </div>
+                {selectedTimetable && (
+                  <div className="shrink-0 text-right">
+                    {Boolean(
+                      currentUser && (
+                        selectedTimetable.creatorId === currentUser.uid ||
+                        selectedTimetable.ownerId === currentUser.uid ||
+                        (selectedTimetable.creatorEmail && currentUser.email && selectedTimetable.creatorEmail.toLowerCase() === currentUser.email.toLowerCase())
+                      )
+                    ) ? (
+                      <span className="inline-block text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 border border-amber-500/20">
+                        You created
+                      </span>
+                    ) : isUserAdmin(currentUser) ? (
+                      <span className="inline-block text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 border border-blue-500/20">
+                        Admin Access
+                      </span>
+                    ) : null}
+                  </div>
+                )}
+              </div>
               <button 
                 onClick={currentSync ? handleRemoveSync : handleSyncToCalendar}
                 disabled={syncStatus !== 'idle'}
@@ -989,8 +1223,14 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
                         const l = locations.find(loc => loc.officialName.toLowerCase().includes(v.toLowerCase()) || loc.aliases.some(a => a.toLowerCase().includes(v.toLowerCase())));
                         if (l) onNavigateTo(l.id); else showToast("error", "Loc not found: " + v);
                       }} className="p-2 bg-rsu-bg rounded-xl"><MapPin className="text-rsu-orange w-4 h-4" /></button>
-                      {(!selectedTimetable || selectedTimetable.creatorId === currentUser?.uid) && (
-                        <button onClick={() => setSlots(slots.filter((_, i) => i !== idx))} className="p-2 bg-red-50 text-red-500 rounded-xl"><Trash2 className="w-4 h-4" /></button>
+                      {(!selectedTimetable || canDeleteTimetable(selectedTimetable)) && (
+                        <button 
+                          onClick={() => setSlots(slots.filter((_, i) => i !== idx))} 
+                          className="p-2 bg-red-50 hover:bg-red-100 text-red-500 rounded-xl transition-colors cursor-pointer"
+                          title="Remove slot"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       )}
                     </div>
                   </div>
@@ -1002,6 +1242,39 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
                 <button onClick={saveTimetable} disabled={isLoading} className="w-full bg-rsu-orange text-white py-5 rounded-2xl font-black uppercase cursor-pointer">
                   {isLoading ? 'Publishing...' : 'Finalize & Publish'}
                 </button>
+              </div>
+            )}
+            {selectedTimetable && (
+              <div className="p-4 bg-rsu-card border-t border-rsu-border">
+                {canDeleteTimetable(selectedTimetable) ? (
+                  <button 
+                    type="button"
+                    onClick={() => handleDeleteTimetable(selectedTimetable)}
+                    disabled={isLoading}
+                    className="w-full py-3 px-4 rounded-2xl font-bold text-xs text-red-600 bg-red-50 hover:bg-red-100 border border-red-200/80 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 shadow-xs disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                    <span>
+                      {isUserAdmin(currentUser) && selectedTimetable.creatorId !== currentUser?.uid
+                        ? "Delete Timetable (Admin Access)"
+                        : "Delete This Timetable"}
+                    </span>
+                  </button>
+                ) : !currentUser ? (
+                  <button 
+                    type="button"
+                    onClick={() => handleDeleteTimetable(selectedTimetable)}
+                    disabled={isLoading}
+                    className="w-full py-3 px-4 rounded-2xl font-bold text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 shadow-xs disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4 text-slate-500" />
+                    <span>Sign In with Google to Delete</span>
+                  </button>
+                ) : (
+                  <p className="text-center text-[11px] text-rsu-muted font-medium py-1">
+                    Created by {selectedTimetable.creatorEmail || 'another user'} • Only creator or admin can delete
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -1128,9 +1401,14 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
                     setConfirmDialog(null);
                     act();
                   }}
-                  className="flex-1 py-3 bg-rsu-orange text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-rsu-orange/90 transition-all shadow-md shadow-rsu-orange/20 cursor-pointer select-none"
+                  className={cn(
+                    "flex-1 py-3 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-md cursor-pointer select-none",
+                    confirmDialog.isDestructive
+                      ? "bg-red-600 hover:bg-red-700 shadow-red-600/20"
+                      : "bg-rsu-orange hover:bg-rsu-orange/90 shadow-rsu-orange/20"
+                  )}
                 >
-                  Confirm
+                  {confirmDialog.confirmText || 'Confirm'}
                 </button>
               </div>
             </motion.div>
