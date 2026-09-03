@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { locations } from './data/locations';
 import { campusEvents } from './data/events';
+import { useCampusEvents } from './hooks/useCampusEvents';
 import mapFeaturesData from './data/rsu-map-features.json';
 import { Location, Maneuver, RouteOption } from './types';
 import { cn, triggerHaptic } from './lib/utils';
@@ -176,6 +177,7 @@ export default function App() {
     setCurrentPath(path);
   };
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const { events: liveCampusEvents } = useCampusEvents(currentUser);
   const [userSlots, setUserSlots] = useState<any[]>([]);
   const [navSession, setNavSession] = useState<{
     phase: 'idle' | 'clarification' | 'selection' | 'guidance' | 'completion';
@@ -1234,7 +1236,7 @@ export default function App() {
   };
 
   const handleChatMessage = async (text: string) => {
-    const intent = await chatService.parseIntent(text, userSlots, campusEvents);
+    const intent = await chatService.parseIntent(text, userSlots, liveCampusEvents);
     let calculatedDistance: number | undefined = undefined;
     let nextPhase = navSession.phase;
     let updatedSession = { ...navSession };
@@ -1339,7 +1341,7 @@ export default function App() {
       isLastStep: updatedSession.currentStepIndex === maneuvers.length - 1 && maneuvers.length > 0,
       phase: updatedSession.phase,
       timetable: userSlots,
-      events: campusEvents,
+      events: liveCampusEvents,
     });
 
     if (isVoiceAssistEnabled && response) {
@@ -1485,6 +1487,7 @@ export default function App() {
     return (
       <LandingPage 
         isDarkMode={false}
+        events={liveCampusEvents}
         onOpenTerms={() => { window.location.href = '/terms.html'; }}
         onOpenPrivacy={() => { window.location.href = '/privacy.html'; }}
         onNavigateToMap={(initialLocation, openTimetable, openEvents) => {
@@ -1870,7 +1873,7 @@ export default function App() {
         onOpenTerms={() => { window.location.href = '/terms.html'; }}
         onOpenPrivacy={() => { window.location.href = '/privacy.html'; }}
         onNavigateHome={() => navigate('/')}
-        eventsCount={campusEvents.length}
+        eventsCount={liveCampusEvents.length}
         activeFriendsCount={friendBeacons.filter(b => b.session.isActive && Date.now() < b.session.expiresAt).length}
         isLiveSharing={!!(activeLiveShareSession?.isActive && Date.now() < (activeLiveShareSession?.expiresAt || 0))}
       />

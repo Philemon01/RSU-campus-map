@@ -37,7 +37,7 @@ import { cn } from '../../lib/utils';
 import { locations } from '../../data/locations';
 import { Location } from '../../types';
 import { useCampusEvents } from '../../hooks/useCampusEvents';
-import { CampusEvent } from '../../data/events';
+import { CampusEvent, isAppOwner } from '../../data/events';
 
 interface ProfilePanelProps {
   onClose: () => void;
@@ -317,7 +317,10 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
 
   const handleDeleteEvent = async (event: CampusEvent) => {
     const isOwn = currentUser?.uid === event.creatorId || (currentUser?.email && event.creatorEmail === currentUser.email);
-    const confirmPrompt = isAdmin
+    const isOwner = isAppOwner(currentUser);
+    const confirmPrompt = isOwner && !isOwn
+      ? `[APP OWNER PRIVILEGE] Remove "${event.title}" permanently for all campus users?`
+      : isAdmin && !isOwn
       ? `[ADMIN PRIVILEGE] Remove "${event.title}" for all students and campus users?`
       : `Delete your event "${event.title}"?`;
 
@@ -968,14 +971,14 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
                   <div className="p-8 text-center bg-rsu-card rounded-2xl border border-rsu-border text-rsu-muted space-y-2">
                     <Calendar className="w-8 h-8 mx-auto opacity-40 text-purple-500" />
                     <p className="text-xs font-bold">
-                      {eventsTab === 'rsvped' ? 'No RSVP’d events found' : 'No matching campus events found'}
+                      {eventsTab === 'rsvped' ? 'No RSVP’d events found' : (eventSearchQuery || eventDateFilter) ? 'No matching campus events found' : 'No Events Scheduled'}
                     </p>
                     <p className="text-[11px] text-rsu-muted">
                       {eventsTab === 'rsvped'
                         ? 'Tap the "RSVP" button on any event to save it here.'
                         : (eventSearchQuery || eventDateFilter)
                           ? 'Try adjusting your search query or reset the date filter.'
-                          : 'Be the first to post a new campus event!'}
+                          : 'No campus events are currently scheduled until an event is created.'}
                     </p>
                   </div>
                 ) : (
@@ -1088,10 +1091,18 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
                               <button
                                 onClick={() => handleDeleteEvent(evt)}
                                 disabled={isDeleting}
-                                title={isAdmin && !isOwnEvent ? "Admin Delete Privilege (Delete any event)" : "Delete your event"}
+                                title={
+                                  isAppOwner(currentUser) && !isOwnEvent
+                                    ? "App Owner Delete Privilege (Delete any event)"
+                                    : isAdmin && !isOwnEvent
+                                    ? "Admin Delete Privilege (Delete any event)"
+                                    : "Delete your event"
+                                }
                                 className={cn(
                                   "flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
-                                  isAdmin && !isOwnEvent
+                                  isAppOwner(currentUser) && !isOwnEvent
+                                    ? "bg-purple-500/10 text-purple-700 hover:bg-purple-600 hover:text-white border border-purple-500/20"
+                                    : isAdmin && !isOwnEvent
                                     ? "bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white border border-red-500/20"
                                     : "text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
                                 )}

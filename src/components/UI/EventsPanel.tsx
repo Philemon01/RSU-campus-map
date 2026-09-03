@@ -27,7 +27,7 @@ import {
 import { User } from 'firebase/auth';
 import { locations } from '../../data/locations';
 import { useCampusEvents } from '../../hooks/useCampusEvents';
-import { CampusEvent } from '../../data/events';
+import { CampusEvent, isAppOwner } from '../../data/events';
 import { cn } from '../../lib/utils';
 
 interface EventsPanelProps {
@@ -186,7 +186,10 @@ export const EventsPanel: React.FC<EventsPanelProps> = ({
 
   const handleDelete = async (event: CampusEvent) => {
     const isOwn = currentUser?.uid === event.creatorId || (currentUser?.email && event.creatorEmail === currentUser.email);
-    const confirmPrompt = isAdmin
+    const isOwner = isAppOwner(currentUser);
+    const confirmPrompt = isOwner && !isOwn
+      ? `[APP OWNER PRIVILEGE] Remove "${event.title}" permanently for all campus users?`
+      : isAdmin && !isOwn
       ? `[ADMIN PRIVILEGE] Remove "${event.title}" for all students and campus users?`
       : `Delete your event "${event.title}"?`;
 
@@ -248,11 +251,15 @@ export const EventsPanel: React.FC<EventsPanelProps> = ({
           <div>
             <h2 className="text-lg font-black italic tracking-tighter flex items-center gap-2">
               {isAddingEvent ? 'POST CAMPUS EVENT' : 'RSU EVENTS'}
-              {isAdmin && (
+              {isAppOwner(currentUser) ? (
+                <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[9px] font-black tracking-wider uppercase not-italic">
+                  App Owner
+                </span>
+              ) : isAdmin ? (
                 <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] font-black tracking-wider uppercase not-italic">
                   Admin
                 </span>
-              )}
+              ) : null}
             </h2>
             <p className="text-[10px] opacity-70 font-bold uppercase tracking-widest leading-none">
               {isAddingEvent ? 'Add lectures, matches & meetings' : 'Schedule, Search & RSVP Hub'}
@@ -292,8 +299,18 @@ export const EventsPanel: React.FC<EventsPanelProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Admin Mode Ribbon */}
-      {isAdmin && !isAddingEvent && (
+      {/* App Owner & Admin Privileges Ribbon */}
+      {isAppOwner(currentUser) && !isAddingEvent ? (
+        <div className="px-4 py-2 bg-purple-500/10 border-b border-purple-500/20 flex items-center justify-between text-xs text-purple-900 dark:text-purple-200">
+          <div className="flex items-center gap-1.5 text-[11px] font-bold">
+            <ShieldCheck className="w-4 h-4 text-purple-600 shrink-0" />
+            <span>App Owner Active: Delete & Moderation Privileges</span>
+          </div>
+          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-purple-600 text-white shrink-0">
+            App Owner
+          </span>
+        </div>
+      ) : isAdmin && !isAddingEvent ? (
         <div className="px-4 py-2 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200">
           <div className="flex items-center gap-1.5 text-[11px] font-bold">
             <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -303,7 +320,7 @@ export const EventsPanel: React.FC<EventsPanelProps> = ({
             Admin
           </span>
         </div>
-      )}
+      ) : null}
 
       {isAddingEvent ? (
         /* Event Creation Form */
@@ -709,10 +726,18 @@ export const EventsPanel: React.FC<EventsPanelProps> = ({
                           <button
                             onClick={() => handleDelete(event)}
                             disabled={isDeleting}
-                            title={isAdmin && !isOwn ? "Admin Delete Privilege" : "Delete Event"}
+                            title={
+                              isAppOwner(currentUser) && !isOwn
+                                ? "App Owner Delete Privilege (Delete any event)"
+                                : isAdmin && !isOwn
+                                ? "Admin Delete Privilege (Delete any event)"
+                                : "Delete Event"
+                            }
                             className={cn(
                               "p-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0",
-                              isAdmin && !isOwn 
+                              isAppOwner(currentUser) && !isOwn
+                                ? "bg-purple-500/10 text-purple-700 hover:bg-purple-600 hover:text-white border border-purple-500/25"
+                                : isAdmin && !isOwn 
                                 ? "bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white border border-red-500/20"
                                 : "text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
                             )}
@@ -729,28 +754,44 @@ export const EventsPanel: React.FC<EventsPanelProps> = ({
                   );
                 })
               ) : (
-                <div className="flex flex-col items-center justify-center h-48 text-center p-4">
-                  <Calendar className="w-10 h-10 text-rsu-border mb-3 opacity-25" />
-                  <p className="text-xs font-black text-rsu-navy dark:text-white uppercase tracking-wider">
-                    {activeTab === 'rsvped' ? 'No RSVPed Events Yet' : 'No Events Found'}
+                <div className="flex flex-col items-center justify-center h-64 text-center p-6 bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl border border-dashed border-rsu-border/40 my-2">
+                  <div className="w-12 h-12 rounded-2xl bg-rsu-orange/10 flex items-center justify-center mb-3">
+                    <Calendar className="w-6 h-6 text-rsu-orange" />
+                  </div>
+                  <p className="text-sm font-black text-rsu-navy dark:text-white uppercase tracking-wider">
+                    {activeTab === 'rsvped' ? 'No RSVPed Events' : searchQuery || selectedDateFilter ? 'No Matching Events' : 'No Events Scheduled'}
                   </p>
-                  <p className="text-[10px] text-rsu-muted mt-1 max-w-[200px]">
+                  <p className="text-xs text-rsu-muted mt-1.5 max-w-[260px] leading-relaxed">
                     {activeTab === 'rsvped' 
                       ? 'Tap the "RSVP" button on any campus event to save it to your profile.' 
                       : searchQuery || selectedDateFilter
                         ? 'Try adjusting your search query or clear the date filter.'
-                        : 'Tap "+ Add Campus Event" above to post the first one.'}
+                        : 'No campus events are currently scheduled. When a student, organizer, or the app owner creates an event, it will be saved to the database and appear here for everyone in real time.'}
                   </p>
-                  {(searchQuery || selectedDateFilter) && (
+                  {searchQuery || selectedDateFilter ? (
                     <button
                       onClick={() => {
                         setSearchQuery('');
                         setSelectedDateFilter('');
                         setFilterCategory('all');
                       }}
-                      className="mt-3 px-3 py-1 bg-rsu-navy text-white text-[10px] font-bold rounded-lg"
+                      className="mt-3.5 px-3.5 py-1.5 bg-rsu-navy text-white text-xs font-bold rounded-xl hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
                     >
                       Reset Filters
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (!currentUser && onSignIn) {
+                          onSignIn();
+                          return;
+                        }
+                        setIsAddingEvent(true);
+                      }}
+                      className="mt-3.5 px-4 py-2 bg-rsu-orange hover:bg-rsu-navy text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Post An Event</span>
                     </button>
                   )}
                 </div>

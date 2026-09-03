@@ -21,7 +21,7 @@ import { collection, query, where, getDocs, addDoc, doc, updateDoc, deleteDoc, o
 import { signInWithPopup, signInAnonymously, GoogleAuthProvider, User } from 'firebase/auth';
 import { db, auth, googleProvider, getCachedAccessToken, setCachedAccessToken } from '../../lib/firebase';
 import { locations } from '../../data/locations';
-import { isUserAdmin } from '../../data/events';
+import { isUserAdmin, isAppOwner, APP_OWNER_EMAIL } from '../../data/events';
 import { cn } from '../../lib/utils';
 import { parseTimetableOnClient } from '../../services/client/geminiParser';
 
@@ -175,7 +175,7 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
 
   const canDeleteTimetable = (t: Timetable | null): boolean => {
     if (!t || !currentUser) return false;
-    if (isUserAdmin(currentUser)) return true;
+    if (isAppOwner(currentUser) || isUserAdmin(currentUser)) return true;
     const isCreator = Boolean(
       (t.creatorId && t.creatorId === currentUser.uid) ||
       (t.ownerId && t.ownerId === currentUser.uid) ||
@@ -609,10 +609,11 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
     }
 
     if (!canDeleteTimetable(t)) {
-      showToast("error", "Permission restricted: Only the creator of this timetable or an administrator can delete it.");
+      showToast("error", `Permission restricted: Only the creator of this timetable or the app owner (${APP_OWNER_EMAIL}) can delete it.`);
       return;
     }
 
+    const isOwner = isAppOwner(currentUser);
     const isAdmin = isUserAdmin(currentUser);
     const isSelf = Boolean(
       currentUser && (
@@ -623,9 +624,18 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
     );
 
     const titleStr = t.department ? `${t.department} (${t.level})` : `${t.faculty} (${t.level})`;
-    const confirmMessage = isAdmin && !isSelf
-      ? `As campus administrator, permanently delete the "${titleStr}" timetable created by ${t.creatorEmail || 'another user'} and all its lecture slots?`
-      : `Permanently delete your "${titleStr}" timetable and all its scheduled lecture slots? This action cannot be undone.`;
+    let confirmMessage = `Permanently delete your "${titleStr}" timetable and all its scheduled lecture slots? This action cannot be undone.`;
+    if (isOwner && !isSelf) {
+      confirmMessage = `As app owner (${currentUser?.email}), permanently delete the "${titleStr}" timetable created by ${t.creatorEmail || 'another user'} and all its lecture slots?`;
+    } else if (isAdmin && !isSelf) {
+      confirmMessage = `As campus administrator, permanently delete the "${titleStr}" timetable created by ${t.creatorEmail || 'another user'} and all its lecture slots?`;
+    }
+
+    const confirmButtonText = isOwner && !isSelf 
+      ? 'Delete (App Owner Access)'
+      : isAdmin && !isSelf
+      ? 'Delete (Admin Privileges)'
+      : 'Delete Timetable';
 
     showConfirm(confirmMessage, async () => {
       const path = `timetables/${t.id}`;
@@ -670,7 +680,7 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
       } finally {
         setIsLoading(false);
       }
-    }, isAdmin && !isSelf ? 'Delete (Admin Privileges)' : 'Delete Timetable', true);
+    }, confirmButtonText, true);
   };
 
   return (
@@ -804,6 +814,19 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
                       Sign In
                     </button>
                   </div>
+                ) : isAppOwner(currentUser) ? (
+                  <div className="bg-purple-500/10 border border-purple-500/25 rounded-2xl p-3 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2.5 h-2.5 rounded-full bg-purple-600 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-black text-purple-900 text-xs uppercase tracking-wider leading-none mb-0.5">App Owner Access Active</p>
+                        <p className="text-[10px] text-purple-700 font-medium truncate">{currentUser.email} • Full authority to manage & delete all timetable data</p>
+                      </div>
+                    </div>
+                    <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-purple-600 text-white shrink-0">
+                      App Owner
+                    </span>
+                  </div>
                 ) : isUserAdmin(currentUser) ? (
                   <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-3 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
@@ -910,8 +933,9 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
                           (t.creatorEmail && currentUser.email && t.creatorEmail.toLowerCase() === currentUser.email.toLowerCase())
                         )
                       );
+                      const isOwner = isAppOwner(currentUser);
                       const isAdmin = isUserAdmin(currentUser);
-                      const canDelete = Boolean(isAdmin || isCreator);
+                      const canDelete = Boolean(isOwner || isAdmin || isCreator);
 
                       return (
                         <div key={t.id} className="relative bg-rsu-card rounded-2xl mb-3 border border-rsu-border/20 shadow-xs hover:shadow-md transition-all flex items-center justify-between overflow-hidden">
@@ -928,7 +952,12 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
                                     You created
                                   </span>
                                 )}
-                                {isAdmin && !isCreator && (
+                                {isOwner && !isCreator && (
+                                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-purple-500/10 text-purple-700 border border-purple-500/20 shrink-0">
+                                    App Owner
+                                  </span>
+                                )}
+                                {isAdmin && !isOwner && !isCreator && (
                                   <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-700 border border-blue-500/20 shrink-0">
                                     Admin
                                   </span>
@@ -947,7 +976,7 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
                                   handleDeleteTimetable(t); 
                                 }} 
                                 className="p-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-all cursor-pointer flex items-center justify-center border border-red-200/80 active:scale-95 shadow-xs"
-                                title={isAdmin && !isCreator ? "Delete Timetable (Admin Privileges)" : "Delete Your Timetable"}
+                                title={isOwner && !isCreator ? "Delete Timetable (App Owner Privileges)" : isAdmin && !isCreator ? "Delete Timetable (Admin Privileges)" : "Delete Your Timetable"}
                                 aria-label="Delete timetable"
                               >
                                 <Trash2 className="w-4 h-4 text-red-600" />
@@ -1106,11 +1135,13 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
                       onClick={() => handleDeleteTimetable(selectedTimetable)}
                       disabled={isLoading}
                       className="px-3 py-1.5 rounded-xl text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
-                      title={isUserAdmin(currentUser) && selectedTimetable.creatorId !== currentUser?.uid ? "Delete Timetable (Admin Privileges)" : "Delete Timetable"}
+                      title={isAppOwner(currentUser) ? "Delete Timetable (App Owner Privileges)" : isUserAdmin(currentUser) && selectedTimetable.creatorId !== currentUser?.uid ? "Delete Timetable (Admin Privileges)" : "Delete Timetable"}
                     >
                       <Trash2 className="w-3.5 h-3.5 text-red-600" />
                       <span>
-                        {isUserAdmin(currentUser) && selectedTimetable.creatorId !== currentUser?.uid 
+                        {isAppOwner(currentUser) && selectedTimetable.creatorId !== currentUser?.uid
+                          ? "Delete (App Owner)"
+                          : isUserAdmin(currentUser) && selectedTimetable.creatorId !== currentUser?.uid 
                           ? "Delete (Admin)" 
                           : "Delete Timetable"}
                       </span>
@@ -1146,6 +1177,10 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
                     ) ? (
                       <span className="inline-block text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 border border-amber-500/20">
                         You created
+                      </span>
+                    ) : isAppOwner(currentUser) ? (
+                      <span className="inline-block text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-700 border border-purple-500/20">
+                        App Owner Access
                       </span>
                     ) : isUserAdmin(currentUser) ? (
                       <span className="inline-block text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 border border-blue-500/20">
@@ -1255,7 +1290,9 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
                   >
                     <Trash2 className="w-4 h-4 text-red-600" />
                     <span>
-                      {isUserAdmin(currentUser) && selectedTimetable.creatorId !== currentUser?.uid
+                      {isAppOwner(currentUser) && selectedTimetable.creatorId !== currentUser?.uid
+                        ? "Delete Timetable (App Owner Access)"
+                        : isUserAdmin(currentUser) && selectedTimetable.creatorId !== currentUser?.uid
                         ? "Delete Timetable (Admin Access)"
                         : "Delete This Timetable"}
                     </span>
@@ -1272,7 +1309,7 @@ export const TimetablePanel: React.FC<TimetablePanelProps> = ({ onClose, onNavig
                   </button>
                 ) : (
                   <p className="text-center text-[11px] text-rsu-muted font-medium py-1">
-                    Created by {selectedTimetable.creatorEmail || 'another user'} • Only creator or admin can delete
+                    Created by {selectedTimetable.creatorEmail || 'another user'} • Only creator or app owner ({APP_OWNER_EMAIL}) can delete
                   </p>
                 )}
               </div>

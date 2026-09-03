@@ -8,7 +8,7 @@ import {
 } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { db, auth } from '../lib/firebase';
-import { CampusEvent, campusEvents as initialDefaultEvents, isUserAdmin } from '../data/events';
+import { CampusEvent, isUserAdmin, isAppOwner, APP_OWNER_EMAIL } from '../data/events';
 
 enum OperationType {
   CREATE = 'create',
@@ -209,11 +209,8 @@ export function useCampusEvents(currentUser: User | null) {
     };
   }, [currentUser?.uid]);
 
-  // Compute merged events list
+  // Compute merged events list directly from Firestore database
   const allEvents: CampusEvent[] = useMemo(() => [
-    // Include default events that have not been deleted
-    ...initialDefaultEvents.filter(e => !deletedEventIds.includes(e.id)),
-    // Include user and admin events from Firestore that have not been deleted
     ...firestoreEvents.filter(e => !deletedEventIds.includes(e.id))
   ].sort((a, b) => {
     // Sort by date then time
@@ -222,16 +219,17 @@ export function useCampusEvents(currentUser: User | null) {
     return (a.startTime || '').localeCompare(b.startTime || '');
   }), [deletedEventIds, firestoreEvents]);
 
+  const isOwner = isAppOwner(currentUser);
   const isAdmin = isUserAdmin(currentUser);
 
-  // Check if current user can delete a specific event
+  // Check if current user can delete a specific event (App Owner & Admin have full delete authority)
   const canDeleteEvent = useCallback((event: CampusEvent): boolean => {
     if (!currentUser) return false;
-    if (isAdmin) return true; // Admin can delete ANY event
+    if (isAppOwner(currentUser) || isUserAdmin(currentUser)) return true;
     if (event.creatorId && event.creatorId === currentUser.uid) return true;
     if (event.creatorEmail && currentUser.email && event.creatorEmail.toLowerCase() === currentUser.email.toLowerCase()) return true;
     return false;
-  }, [currentUser, isAdmin]);
+  }, [currentUser]);
 
   // Check if user has RSVPed to an event
   const isRsvped = useCallback((eventId: string): boolean => {
@@ -320,13 +318,11 @@ export function useCampusEvents(currentUser: User | null) {
       return newEvent;
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, `events/${eventId}`);
-      // Optimistic local update fallback
-      setFirestoreEvents(prev => [...prev.filter(e => e.id !== eventId), newEvent]);
-      return newEvent;
+      throw err;
     }
   }, [currentUser]);
 
-  // Delete an event (Admin can delete ANY event; creator can delete their own)
+  // Delete an event (Owner and Admin can delete ANY event; creator can delete their own)
   const deleteEvent = useCallback(async (eventId: string): Promise<void> => {
     if (!currentUser) {
       throw new Error("You must be signed in to delete an event.");
@@ -338,10 +334,32 @@ export function useCampusEvents(currentUser: User | null) {
     }
 
     if (!canDeleteEvent(targetEvent)) {
-      throw new Error("You do not have permission to delete this event. Only the event creator or the campus Administrator can delete it.");
+      throw new Error(`Permission restricted: Only the creator of this event or the app owner (${APP_OWNER_EMAIL}) can delete it.`);
     }
 
-    // Update local state immediately
+    // 1. Delete directly from Firestore events collection
+    try {
+      await deleteDoc(doc(db, 'events', eventId));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `events/${eventId}`);
+      throw err;
+    }
+
+    // 2. Also record in deleted_events so it stays synchronized across sessions
+    try {
+      await setDoc(doc(db, 'deleted_events', eventId), {
+        deletedAt: new Date().toISOString(),
+        deletedByUid: currentUser.uid,
+        deletedByEmail: currentUser.email || 'unknown',
+        isOwnerAction: isAppOwner(currentUser),
+        isAdminAction: isUserAdmin(currentUser)
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, `deleted_events/${eventId}`);
+    }
+
+    // Update local state
+    setFirestoreEvents(prev => prev.filter(e => e.id !== eventId));
     setDeletedEventIds(prev => {
       const updated = Array.from(new Set([...prev, eventId]));
       try {
@@ -349,27 +367,7 @@ export function useCampusEvents(currentUser: User | null) {
       } catch {}
       return updated;
     });
-
-    setFirestoreEvents(prev => prev.filter(e => e.id !== eventId));
-
-    try {
-      // 1. If it exists in Firestore events collection, delete the doc
-      const isFirestoreDoc = firestoreEvents.some(e => e.id === eventId);
-      if (isFirestoreDoc) {
-        await deleteDoc(doc(db, 'events', eventId));
-      }
-
-      // 2. Also record in deleted_events so it stays deleted across sessions even for static events
-      await setDoc(doc(db, 'deleted_events', eventId), {
-        deletedAt: new Date().toISOString(),
-        deletedByUid: currentUser.uid,
-        deletedByEmail: currentUser.email || 'unknown',
-        isAdminAction: isAdmin
-      });
-    } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, `events/${eventId}`);
-    }
-  }, [currentUser, allEvents, canDeleteEvent, firestoreEvents, isAdmin]);
+  }, [currentUser, allEvents, canDeleteEvent]);
 
   return {
     events: allEvents,
@@ -379,7 +377,9 @@ export function useCampusEvents(currentUser: User | null) {
     toggleRsvp,
     isLoading,
     error,
+    isOwner,
     isAdmin,
+    ownerEmail: APP_OWNER_EMAIL,
     canDeleteEvent,
     addEvent,
     deleteEvent

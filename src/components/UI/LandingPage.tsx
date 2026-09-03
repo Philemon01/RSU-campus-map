@@ -58,6 +58,7 @@ interface LandingPageProps {
   onNavigateToMap: (initialLocation?: Location | null, openTimetable?: boolean, openEvents?: boolean, openMeetup?: boolean) => void;
   onOpenTerms?: () => void;
   onOpenPrivacy?: () => void;
+  events?: CampusEvent[];
 }
 
 interface SimStep {
@@ -126,7 +127,8 @@ export function LandingPage({
   isDarkMode = false, 
   onNavigateToMap,
   onOpenTerms,
-  onOpenPrivacy
+  onOpenPrivacy,
+  events = campusEvents
 }: LandingPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
@@ -1251,7 +1253,8 @@ export function LandingPage({
 
           {/* Events Grid */}
           {(() => {
-            const filteredEvents = campusEvents.filter(ev => {
+            const currentEventsList = events || [];
+            const filteredEvents = currentEventsList.filter(ev => {
               const locName = locations.find(l => l.id === ev.locationId)?.officialName || '';
               const matchesSearch = !eventSearchQuery.trim() ||
                 ev.title.toLowerCase().includes(eventSearchQuery.toLowerCase()) ||
@@ -1263,20 +1266,36 @@ export function LandingPage({
             });
 
             if (filteredEvents.length === 0) {
+              const isFiltered = eventSearchQuery.trim() !== '' || eventCategoryFilter !== 'all';
               return (
                 <div className={cn(
                   "p-12 text-center rounded-3xl border space-y-3",
                   isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-200"
                 )}>
-                  <Ticket size={32} className="mx-auto text-slate-400 opacity-60" />
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">No campus events match your filter</h3>
-                  <p className="text-xs text-slate-500">Try clearing the search query or switching categories.</p>
-                  <button
-                    onClick={() => { setEventSearchQuery(''); setEventCategoryFilter('all'); }}
-                    className="px-4 py-2 bg-slate-200 dark:bg-slate-800 rounded-full text-xs font-bold uppercase tracking-wider cursor-pointer hover:opacity-80"
-                  >
-                    Reset Filters
-                  </button>
+                  <Ticket size={36} className="mx-auto text-rsu-orange/60" />
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    {isFiltered ? 'No campus events match your filter' : 'No Events Scheduled'}
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto">
+                    {isFiltered 
+                      ? 'Try clearing the search query or switching categories.' 
+                      : 'No campus events are currently scheduled. When a student, organizer, or the app owner creates an event, it will appear here for everyone in real time.'}
+                  </p>
+                  {isFiltered ? (
+                    <button
+                      onClick={() => { setEventSearchQuery(''); setEventCategoryFilter('all'); }}
+                      className="px-4 py-2 bg-slate-200 dark:bg-slate-800 rounded-full text-xs font-bold uppercase tracking-wider cursor-pointer hover:opacity-80"
+                    >
+                      Reset Filters
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onNavigateToMap(null, false, true)}
+                      className="px-5 py-2.5 bg-rsu-orange hover:bg-rsu-navy text-white rounded-full text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors shadow-sm"
+                    >
+                      Post An Event On Campus Map
+                    </button>
+                  )}
                 </div>
               );
             }
